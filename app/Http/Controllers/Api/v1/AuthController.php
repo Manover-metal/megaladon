@@ -56,7 +56,8 @@ class AuthController extends ApiController
     public function sendCode(SendCodeRequest $request)
     {
         $user = $this->authUser();
-        return $this->result((new PhoneConfirmationService())->sendCode($user, $user->phone));
+        $code = (new PhoneConfirmationService())->sendCode($user, $user->phone);
+        return $this->result(['verification_code' => $code]);
     }
 
     public function resetPassword(ResetPasswordRequest $request)

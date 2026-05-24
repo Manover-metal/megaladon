@@ -18,8 +18,8 @@ class PhoneConfirmationService extends BaseService
     {
         $code = 101010;//rand(100000, 999999);
         $this->pcRepo->store($user, $phone, $code);
-        
+
         //TODO:Сделать отправку смс
-        return $this->ok();
+        return $code;
     }
 }

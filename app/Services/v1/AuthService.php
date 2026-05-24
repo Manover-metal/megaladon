@@ -56,10 +56,11 @@ class AuthService extends BaseService
         $data['password'] = Hash::make($data['password']);
 
         $user = $this->userRepo->store($data);
-        (new PhoneConfirmationService())->sendCode($user, $data['phone']);
+        $code = (new PhoneConfirmationService())->sendCode($user, $data['phone']);
 
         return $this->result([
             'user' => $user,
+            'verification_code' => $code,
         ]);
     }
 
