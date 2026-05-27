@@ -25,9 +25,25 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'phone' => ['required', 'string', 'starts_with:+'],
-            'password' => ['required', 'string', 'min:6', 'max:32', 'confirmed'],
+            'phone' => ['required', 'string', 'starts_with:+', 'unique:users,phone'],
+            'password' => ['required', 'string', 'min:8', 'max:32', 'confirmed'],
             'city_id' => ['required', 'exists:cities,id'],
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'name.required'      => 'Имя обязательно для заполнения',
+            'name.min'           => 'Имя должно содержать не менее 2 символов',
+            'phone.required'     => 'Номер телефона обязателен',
+            'phone.starts_with'  => 'Номер телефона должен начинаться с +',
+            'phone.unique'       => 'Пользователь с таким номером уже зарегистрирован',
+            'password.required'  => 'Пароль обязателен',
+            'password.min'       => 'Пароль должен содержать не менее 8 символов',
+            'password.confirmed' => 'Пароли не совпадают',
+            'city_id.required'   => 'Выберите город',
+            'city_id.exists'     => 'Выбранный город не найден',
         ];
     }
 }

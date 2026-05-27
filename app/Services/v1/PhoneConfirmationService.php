@@ -16,10 +16,13 @@ class PhoneConfirmationService extends BaseService
 
     public function sendCode(User $user, $phone)
     {
-        $code = 101010;//rand(100000, 999999);
+        $code = rand(100000, 999999);
         $this->pcRepo->store($user, $phone, $code);
 
-        //TODO:Сделать отправку смс
+        // TODO: Подключить SMS-провайдер (Mobizon / SMSC.ru / Twilio)
+        // Пример для Mobizon: https://mobizon.kz/help/api-docs/sms-api
+        // $this->sendSms($phone, "Ваш код подтверждения: {$code}");
+
         return $code;
     }
 }
