@@ -135,7 +135,7 @@ class AuthService extends BaseService
 
         return $this->result([
             'token' => $token,
-            'user' => $user,
+            'user' => (new UserPresenter($user))->profile(),
         ]);
     }
 
@@ -143,7 +143,7 @@ class AuthService extends BaseService
     {
         $user = $this->userRepo->getUserByPhone($data['phone']);
         if (is_null($user)) {
-            return $this->errNotFound('Пользователь с таким паролем не существует');
+            return $this->errNotFound('Пользователь с таким номером не найден');
         }
 
         $newPassword = Str::random(10);
