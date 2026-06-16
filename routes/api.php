@@ -62,6 +62,7 @@ Route::group(['guard' => 'api'], function () {
         Route::post('/change-phone/end', [UserController::class, 'endChangePhone']);
         Route::post('/change-token', [UserController::class, 'updateToken']);
         Route::delete('/disable-notifications', [UserController::class, 'disableNotifications']);
+        Route::get('/profile', [UserController::class, 'currentProfile']);
         Route::get('/{id}', [UserController::class, 'profile']);
     });
 

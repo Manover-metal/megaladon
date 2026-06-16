@@ -32,7 +32,7 @@ class UpdateStoreRequest extends FormRequest
             'lon' => ['nullable', 'numeric'],
             'full_address' => ['nullable', 'string', 'max:255'],
             'contacts.*.type' => ['nullable', 'in:site,email,phone,home_phone', 'string'],
-            'contacts.*.contact_name' => ['nullable_if:contacts.type,phone,home_phone', 'string', 'min:2', 'max:20'],
+            'contacts.*.contact_name' => ['nullable', 'string', 'min:2', 'max:20'],
             'contacts.*.value' => ['nullable', 'string'],
         ];
     }

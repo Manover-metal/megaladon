@@ -32,6 +32,11 @@ class UserService extends BaseService
         return $this->result(['user' => (new UserPresenter($updatedUser))->profile()]);
     }
     
+    public function currentProfile(User $user)
+    {
+        return $this->result(['user' => (new UserPresenter($user))->profile()]);
+    }
+
     public function profile(int $userId)
     {
         $user = User::find($userId);

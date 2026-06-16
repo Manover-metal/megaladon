@@ -16,7 +16,8 @@ class Advert extends Model
         'price',
         'category_id',
         'city_id',
-        'additional_phone'
+        'additional_phone',
+        'type',
     ];
 
     public function user()

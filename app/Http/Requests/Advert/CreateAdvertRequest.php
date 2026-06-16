@@ -25,6 +25,7 @@ class CreateAdvertRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'in:advert,service'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric'],
             'category_id' => ['required', 'integer', 'exists:advert_categories,id'],

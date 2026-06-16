@@ -9,13 +9,13 @@ class AdvertRepo
 {
     public function info(int $id)
     {
-        return Advert::with('user', 'category', 'media')
+        return Advert::with('user', 'category', 'city', 'media')
             ->find($id);
     }
 
     public function index(array $params)
     {
-        $query = Advert::with('media');
+        $query = Advert::with('media', 'category', 'city');
         $query = $this->applyFilterQuery($query, $params);           
         $query = $this->applyPaginationQuery($query, $params);
         $query = $this->applyOrderBy($query, $params);
@@ -35,6 +35,10 @@ class AdvertRepo
 
     private function applyFilterQuery($query, $params)
     {
+        if (isset($params['type'])) {
+            $query->where('type', $params['type']);
+        }
+
         if (isset($params['category'])) {
             $query->where('category_id', $params['category']);
         }

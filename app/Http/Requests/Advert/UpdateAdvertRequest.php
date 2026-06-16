@@ -25,6 +25,7 @@ class UpdateAdvertRequest extends FormRequest
     {
         return [
             'title' => ['nullable', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'in:advert,service'],
             'description' => ['nullable', 'string'],
             'price' => ['nullable', 'numeric'],
             'category_id' => ['nullable', 'integer', 'exists:advert_categories,id'],

@@ -41,6 +41,12 @@ class UserController extends ApiController
         return $this->result($response);
     }
 
+    public function currentProfile(GetProfileRequest $request)
+    {
+        $response = $this->userService->currentProfile($this->authUser());
+        return $this->result($response);
+    }
+
     public function startChangePhone(ChangePhoneRequest $request)
     {
         $data = $request->validated();
