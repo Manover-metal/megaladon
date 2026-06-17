@@ -83,12 +83,9 @@ jobs:
 
             export APP_IMAGE="alexhcjp/megaladon_back:${{ github.sha }}"
 
-            echo "==> Тянем образ и поднимаем контейнеры"
+            echo "==> Тянем образ и поднимаем контейнеры (ждём healthcheck БД)"
             docker compose pull
-            docker compose up -d --no-build --remove-orphans
-
-            echo "==> Ждём готовности БД"
-            sleep 10
+            docker compose up -d --no-build --remove-orphans --wait
 
             echo "==> Миграции и кеши"
             docker compose exec -T app php artisan migrate --force

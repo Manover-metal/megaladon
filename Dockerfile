@@ -25,7 +25,15 @@ COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 WORKDIR /app
 COPY . /app
 RUN composer install --no-interaction --no-plugins --no-scripts --prefer-dist \
-    --optimize-autoloader
+    --optimize-autoloader \
+    && mkdir -p \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        storage/app/public \
+        bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
 
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
