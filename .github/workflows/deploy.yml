@@ -5,7 +5,7 @@ name: Deploy backend
 # Требуются секреты репозитория (Settings → Secrets and variables → Actions):
 #   SSH_HOST       — адрес сервера (IP или домен)
 #   SSH_USERNAME   — пользователь SSH
-#   SSH_KEY        — приватный SSH-ключ (весь файл, включая BEGIN/END)
+#   SSH_PASSWORD   — пароль пользователя SSH
 #   SSH_PORT       — порт SSH (необязательно, по умолчанию 22)
 #   PROJECT_PATH   — путь к каталогу проекта на сервере (где лежит docker-compose.yml)
 #
@@ -32,7 +32,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT || 22 }}
           command_timeout: 30m
           script: |
