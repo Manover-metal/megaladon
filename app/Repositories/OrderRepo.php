@@ -34,6 +34,10 @@ class OrderRepo
             $query->where('category_id', $params['category']);
         }
 
+        if (isset($params['city_id'])) {
+            $query->where('city_id', $params['city_id']);
+        }
+
         if (isset($params['status'])) {
             $query->where('status', $params['status']);
         }
