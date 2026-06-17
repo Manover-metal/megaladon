@@ -16,7 +16,8 @@ class PhoneConfirmationService extends BaseService
 
     public function sendCode(User $user, $phone)
     {
-        $code = rand(100000, 999999);
+        // TODO: вернуть случайную генерацию после подключения SMS-провайдера
+        $code = 101010;
         $this->pcRepo->store($user, $phone, $code);
 
         // TODO: Подключить SMS-провайдер (Mobizon / SMSC.ru / Twilio)
