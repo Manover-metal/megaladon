@@ -1,0 +1,67 @@
+name: Deploy backend
+
+# Деплой бэкенда на сервер по SSH с разворачиванием через Docker.
+#
+# Требуются секреты репозитория (Settings → Secrets and variables → Actions):
+#   SSH_HOST       — адрес сервера (IP или домен)
+#   SSH_USERNAME   — пользователь SSH
+#   SSH_KEY        — приватный SSH-ключ (весь файл, включая BEGIN/END)
+#   SSH_PORT       — порт SSH (необязательно, по умолчанию 22)
+#   PROJECT_PATH   — путь к каталогу проекта на сервере (где лежит docker-compose.yml)
+#
+# Предполагается, что на сервере уже:
+#   - установлен Docker + Docker Compose v2
+#   - склонирован этот репозиторий в PROJECT_PATH с remote origin
+#   - присутствует настроенный .env
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 30m
+          script: |
+            set -euo pipefail
+
+            cd "${{ secrets.PROJECT_PATH }}"
+
+            echo "==> Обновляем код"
+            git fetch --all --prune
+            git reset --hard origin/main
+
+            echo "==> Пересобираем и поднимаем контейнеры"
+            docker compose up -d --build --remove-orphans
+
+            echo "==> Ждём готовности БД"
+            sleep 10
+
+            echo "==> Обновляем зависимости (vendor — именованный volume)"
+            docker compose exec -T app composer install \
+              --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+            echo "==> Миграции и кеши"
+            docker compose exec -T app php artisan migrate --force
+            docker compose exec -T app php artisan storage:link || true
+            docker compose exec -T app php artisan optimize:clear
+            docker compose exec -T app php artisan config:cache
+            docker compose exec -T app php artisan view:cache
+
+            echo "==> Чистим неиспользуемые образы"
+            docker image prune -f
+
+            echo "==> Готово"
