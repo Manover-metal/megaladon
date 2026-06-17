@@ -9,7 +9,6 @@ services:
     volumes:
       - app_code:/var/www
       - ./storage:/var/www/storage
-      - ./.env:/var/www/.env
     env_file:
       - path: .env
         required: false
