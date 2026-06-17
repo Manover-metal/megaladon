@@ -1,18 +1,18 @@
 name: Deploy backend
 
-# Деплой бэкенда на сервер по SSH с разворачиванием через Docker.
+# Деплой бэкенда: код заливается на сервер по SSH (rsync), затем разворачивается
+# через Docker. Серверу НЕ нужен доступ к GitHub и git-репозиторий — файлы
+# отправляются прямо с раннера.
 #
 # Требуются секреты репозитория (Settings → Secrets and variables → Actions):
-#   SSH_HOST       — адрес сервера (IP или домен)
+#   SSH_HOST       — адрес сервера (IP или домен), напр. 213.155.23.198
 #   SSH_USERNAME   — пользователь SSH
 #   SSH_PASSWORD   — пароль пользователя SSH
 #   SSH_PORT       — порт SSH (необязательно, по умолчанию 22)
-#   PROJECT_PATH   — путь к каталогу проекта на сервере (где лежит docker-compose.yml)
+#   PROJECT_PATH   — путь к каталогу проекта на сервере (где docker-compose.yml)
 #
-# Предполагается, что на сервере уже:
-#   - установлен Docker + Docker Compose v2
-#   - склонирован этот репозиторий в PROJECT_PATH с remote origin
-#   - присутствует настроенный .env
+# На сервере должны быть установлены Docker + Docker Compose v2, а в PROJECT_PATH
+# заранее лежать рабочий .env (он не перезаписывается).
 
 on:
   push:
@@ -27,7 +27,24 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy over SSH
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload code to server (rsync over SSH)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync sshpass
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.env' \
+            --exclude 'storage' \
+            --exclude 'vendor' \
+            --exclude 'node_modules' \
+            -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT || 22 }}" \
+            ./ "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_PATH }}/"
+
+      - name: Deploy (Docker) over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -40,17 +57,13 @@ jobs:
 
             cd "${{ secrets.PROJECT_PATH }}"
 
-            echo "==> Обновляем код"
-            git fetch --all --prune
-            git reset --hard origin/main
-
             echo "==> Пересобираем и поднимаем контейнеры"
             docker compose up -d --build --remove-orphans
 
             echo "==> Ждём готовности БД"
             sleep 10
 
-            echo "==> Обновляем зависимости (vendor — именованный volume)"
+            echo "==> Зависимости (vendor — именованный volume)"
             docker compose exec -T app composer install \
               --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
