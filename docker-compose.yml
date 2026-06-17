@@ -1,15 +1,15 @@
 services:
   app:
+    image: ${APP_IMAGE:-alexhcjp/megaladon_back:latest}
     build:
       context: .
       dockerfile: Dockerfile
     container_name: megaladon_app
     restart: unless-stopped
     volumes:
-      - .:/var/www
-      - vendor:/var/www/vendor
+      - app_code:/var/www
       - ./storage:/var/www/storage
-      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      - ./.env:/var/www/.env
     env_file:
       - path: .env
         required: false
@@ -26,7 +26,8 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - .:/var/www
+      - app_code:/var/www
+      - ./storage:/var/www/storage
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - megaladon
@@ -64,4 +65,4 @@ networks:
 
 volumes:
   db_data:
-  vendor:
+  app_code:

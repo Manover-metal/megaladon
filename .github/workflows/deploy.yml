@@ -1,18 +1,19 @@
 name: Deploy backend
 
-# Деплой бэкенда: код заливается на сервер по SSH (rsync), затем разворачивается
-# через Docker. Серверу НЕ нужен доступ к GitHub и git-репозиторий — файлы
-# отправляются прямо с раннера.
+# Сборка образа в CI и публикация в Docker Hub, затем сервер по SSH тянет образ
+# и поднимает его через Docker. Код «запечён» в образ — заливать исходники на
+# сервер не нужно.
 #
 # Требуются секреты репозитория (Settings → Secrets and variables → Actions):
-#   SSH_HOST       — адрес сервера (IP или домен), напр. 213.155.23.198
-#   SSH_USERNAME   — пользователь SSH
-#   SSH_PASSWORD   — пароль пользователя SSH
-#   SSH_PORT       — порт SSH (необязательно, по умолчанию 22)
-#   PROJECT_PATH   — путь к каталогу проекта на сервере (где docker-compose.yml)
+#   DOCKERHUB_USERNAME — логин Docker Hub (напр. alexhcjp)
+#   DOCKERHUB_TOKEN    — access token Docker Hub (Account Settings → Security)
+#   SSH_HOST           — адрес сервера, напр. 213.155.23.198
+#   SSH_USERNAME       — пользователь SSH
+#   SSH_PASSWORD       — пароль пользователя SSH
+#   SSH_PORT           — порт SSH (необязательно, по умолчанию 22)
+#   PROJECT_PATH       — путь к каталогу проекта на сервере (где docker-compose.yml)
 #
-# На сервере должны быть установлены Docker + Docker Compose v2, а в PROJECT_PATH
-# заранее лежать рабочий .env (он не перезаписывается).
+# На сервере должны быть: Docker + Docker Compose v2 и рабочий .env в PROJECT_PATH.
 
 on:
   push:
@@ -23,28 +24,47 @@ concurrency:
   group: deploy-backend
   cancel-in-progress: false
 
+env:
+  IMAGE: alexhcjp/megaladon_back
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Upload code to server (rsync over SSH)
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Sync compose & nginx config to server
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync sshpass
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" rsync -az --delete \
-            --exclude '.git' \
-            --exclude '.github' \
-            --exclude '.env' \
-            --exclude 'storage' \
-            --exclude 'vendor' \
-            --exclude 'node_modules' \
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" rsync -az \
             -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT || 22 }}" \
-            ./ "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_PATH }}/"
+            docker-compose.yml docker \
+            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_PATH }}/"
 
-      - name: Deploy (Docker) over SSH
+      - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -57,15 +77,18 @@ jobs:
 
             cd "${{ secrets.PROJECT_PATH }}"
 
-            echo "==> Пересобираем и поднимаем контейнеры"
-            docker compose up -d --build --remove-orphans
+            echo "==> Логинимся в Docker Hub (приватный образ)"
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login \
+              -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            export APP_IMAGE="alexhcjp/megaladon_back:${{ github.sha }}"
+
+            echo "==> Тянем образ и поднимаем контейнеры"
+            docker compose pull
+            docker compose up -d --no-build --remove-orphans
 
             echo "==> Ждём готовности БД"
             sleep 10
-
-            echo "==> Зависимости (vendor — именованный volume)"
-            docker compose exec -T app composer install \
-              --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
             echo "==> Миграции и кеши"
             docker compose exec -T app php artisan migrate --force
