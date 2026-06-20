@@ -87,6 +87,9 @@ jobs:
             docker compose pull
             docker compose up -d --no-build --remove-orphans --wait
 
+            echo "==> Гарантируем наличие БД перед миграциями"
+            docker compose exec -T db sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"'
+
             echo "==> Миграции и кеши"
             docker compose exec -T app php artisan migrate --force
             docker compose exec -T app php artisan storage:link || true
