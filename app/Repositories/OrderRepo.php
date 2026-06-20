@@ -42,6 +42,10 @@ class OrderRepo
             $query->where('status', $params['status']);
         }
 
+        if (isset($params['statuses']) && is_array($params['statuses']) && count($params['statuses']) > 0) {
+            $query->whereIn('status', $params['statuses']);
+        }
+
         if (isset($params['user_id'])) {
             $query->where('user_id', $params['user_id']);
         }

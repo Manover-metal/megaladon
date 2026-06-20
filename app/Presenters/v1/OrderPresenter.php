@@ -15,8 +15,9 @@ class OrderPresenter extends BasePresenter
             'count_offers' => $this->countOffers(),
             'city' => (new CityPresenter($this->city))->list(),
             'created_at' => date('d.m.Y', strtotime($this->created_at)),
-            'status' => $this->getStatusName(), 
+            'status' => $this->getStatusName(),
             'status_code' => $this->status,
+            'execution_days' => $this->execution_days,
         ];
     }
 
@@ -35,6 +36,7 @@ class OrderPresenter extends BasePresenter
             ] : null,
             'price_max' => number_format($this->price_max, 2),
             'price_recommended' => number_format($this->price_recommended, 2),
+            'execution_days' => $this->execution_days,
             'city' => (new CityPresenter($this->city))->list(),
             'user' => $this->user ? (new UserPresenter($this->user))->short() : null,
             'executor' => $this->executor ? (new ExecutorPresenter($this->executor))->short() : null,

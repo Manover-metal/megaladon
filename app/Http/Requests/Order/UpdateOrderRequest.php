@@ -29,6 +29,7 @@ class UpdateOrderRequest extends FormRequest
             'category_id' => ['nullable', 'integer', 'exists:order_categories,id'],
             'price_recommended' => ['nullable'],
             'price_max' => ['nullable'],
+            'execution_days' => ['required', 'integer', 'min:1'],
             'city_id' => ['required', 'integer', 'exists:cities,id'],
             'files' => ['nullable', 'array'],
             'files.*' => ['nullable', 'file'],
