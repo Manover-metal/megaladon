@@ -10,7 +10,7 @@ class StoreContactsPresenter extends BasePresenter
     {
         return [
             'type' => $this->type,
-            'name' => $this->contact_name ?? null,
+            'contact_name' => $this->contact_name ?? null,
             'value' => $this->value,
         ];
     }

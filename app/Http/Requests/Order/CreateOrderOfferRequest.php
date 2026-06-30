@@ -28,7 +28,7 @@ class CreateOrderOfferRequest extends FormRequest
             'date' => 'required|string|max:255',
             'city_id' => 'required|integer|exists:cities,id',
             'comment' => 'nullable|string',
-            'expired_at' => 'required|date|date_format:Y-m-d',
+            'expired_at' => 'nullable|date|date_format:Y-m-d',
         ];
     }
 }

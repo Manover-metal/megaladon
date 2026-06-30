@@ -25,6 +25,8 @@ class ExecutorRegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string'],
+            'description' => ['nullable', 'string', 'max:3000'],
+            'city_id' => ['required', 'exists:cities,id'],
             'bin' => ['nullable', 'string', 'min:12', 'max:12'],
             'lon' => ['required', 'numeric'],
             'lat' => ['required', 'numeric'],

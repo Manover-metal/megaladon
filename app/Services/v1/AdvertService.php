@@ -2,6 +2,7 @@
 
 namespace App\Services\v1;
 
+use App\Events\ChatCreatedEvent;
 use App\Models\Advert;
 use App\Presenters\v1\AdvertPresenter;
 use App\Repositories\AdvertRepo;
@@ -41,13 +42,20 @@ class AdvertService extends BaseService
             return $this->errFobidden('Unathorized');
         }
 
+        if ($data['type'] == Advert::TYPE_SERVICE) {
+            $checkExecutor = (new ExecutorService())->checkExecutor($user);
+            if (!$this->isSuccess($checkExecutor)) {
+                return $checkExecutor;
+            }
+        }
+
         $data['user_id'] = $user->id;
 
         $advert = $this->advertRepo->store($data);
 
         if (isset($data['files'])) {
             foreach($data['files'] as $file) {
-                $path = $file->store('public/advert/'.$advert->id);
+                $path = $file->store('public/advert/');
                 $advert->media()->create([
                     'storage_link' => Storage::url($path), 
                 ]);
@@ -70,11 +78,17 @@ class AdvertService extends BaseService
         if ($advert->user_id != $user->id) {
             return $this->error(403, 'Вы не можете редактировать чужой объявление');
         }
+        if (isset($data['type']) && $data['type'] == Advert::TYPE_SERVICE) {
+            $checkExecutor = (new ExecutorService())->checkExecutor($user);
+            if (!$this->isSuccess($checkExecutor)) {
+                return $checkExecutor;
+            }
+        }
         $advert->media()->delete();
 
         if (isset($data['files'])) {
             foreach($data['files'] as $file) {
-                $path = $file->store('public/advert/'.$advert->id);
+                $path = $file->store('public/advert/');
                 $advert->media()->create([
                     'storage_link' => Storage::url($path), 
                 ]);
@@ -115,6 +129,8 @@ class AdvertService extends BaseService
 
         $chat = $advert->chatable()->create([]);
         $chat->members()->attach([$user->id => ['chat_id' => $chat->id], $advert->user_id => ['chat_id' => $chat->id]]);
+
+        event(new ChatCreatedEvent($advert->user_id, $chat));
 
         return $this->ok();
     }

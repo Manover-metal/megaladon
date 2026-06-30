@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\SendCodeRequest;
 use App\Http\Requests\Auth\ExecutorRegisterRequest;
+use App\Http\Requests\Auth\PusherLoginRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\StoreRegistrationRequest;
 use App\Services\v1\AuthService;
@@ -68,5 +69,12 @@ class AuthController extends ApiController
     public function logout()
     {
         return $this->result($this->authService->logout());
+    }
+
+    public function pusherLogin(PusherLoginRequest $request)
+    {
+        return response()->json(
+            $this->authService->pusherLogin($request->validated())
+        );
     }
 }

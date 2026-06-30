@@ -32,7 +32,7 @@ class ChatRepo
         $query = ChatMessage::with('user')
             ->where('chat_id', $chatId);
         $query = $this->applyPaginationQuery($query, $params);
-
+        $query = $this->applySortBy($query, $params);
         return $query->get();
     }
 
@@ -61,6 +61,21 @@ class ChatRepo
         } else {
             $query->take(100);
         }
+        return $query;
+    }
+
+    private function applySortBy($query, $params)
+    {
+        $desc = 'ASC';
+
+        if (isset($params['desc'])) {
+            $desc = (boolean)$params['desc'] ? 'DESC' : 'ASC';
+        }
+
+        if (isset($params['sortBy'])) {
+            $query->orderBy($params['sortBy'], $desc);
+        }
+
         return $query;
     }
 }

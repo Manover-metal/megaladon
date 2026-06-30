@@ -24,11 +24,12 @@ class UpdateAdvertRequest extends FormRequest
     public function rules()
     {
         return [
+            'type' => ['nullable', 'in:service,advert'],
             'title' => ['nullable', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'in:advert,service'],
             'description' => ['nullable', 'string'],
             'price' => ['nullable', 'numeric'],
-            'category_id' => ['nullable', 'integer', 'exists:advert_categories,id'],
+            'category_id' => ['nullable', 'integer', 'exists:ad_categories,id'],
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],
             'additional_phone' => ['nullable', 'string', 'starts_with:+'],
             'files' => ['nullable', 'array'],

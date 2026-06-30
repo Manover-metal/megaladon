@@ -10,7 +10,7 @@ class CityPresenter extends BasePresenter
     {
         return [
             'id' => $this->id,
-            'title' => $this->name, 
+            'name' => $this->name, 
         ];
     }
 }

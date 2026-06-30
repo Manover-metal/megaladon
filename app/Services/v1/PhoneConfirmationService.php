@@ -5,13 +5,17 @@ namespace App\Services\v1;
 use App\Models\User;
 use App\Repositories\PhoneConfirmationRepo;
 use App\Services\BaseService;
+use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Log;
 
 class PhoneConfirmationService extends BaseService
 {
     private PhoneConfirmationRepo $pcRepo;
+    private $smsConfig;
 
     public function __construct() {
         $this->pcRepo = new PhoneConfirmationRepo();
+        $this->smsConfig = config('smsc');
     }
 
     public function sendCode(User $user, $phone)

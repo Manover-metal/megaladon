@@ -46,10 +46,6 @@ class StoreRepo
             $query->where('name', $params['name']);
         }
 
-        if (isset($params['type_id'])) {
-            $query->where('type_id', $params['type_id']);
-        }
-
         if (isset($params['city_id'])) {
             $query->where('city_id', $params['city_id']);
         }

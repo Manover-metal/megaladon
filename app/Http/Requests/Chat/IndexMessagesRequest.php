@@ -26,6 +26,8 @@ class IndexMessagesRequest extends FormRequest
         return [
             'startRow' => ['nullable', 'integer'],
             'rowsPerPage' => ['nullable', 'integer'],
+            'sortBy' => ['nullable', 'string'],
+            'desc' => ['nullable', 'boolean'],
         ];
     }
 }
