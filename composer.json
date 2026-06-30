@@ -18,7 +18,6 @@
     "require-dev": {
         "backpack/generators": "^3.3",
         "barryvdh/laravel-ide-helper": "^2.13",
-        "facade/ignition": "^2.5",
         "spatie/laravel-ignition": "^1.0",
         "fakerphp/faker": "^1.9.1",
         "laravel/sail": "^1.0.1",

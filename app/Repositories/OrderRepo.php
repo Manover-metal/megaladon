@@ -50,6 +50,11 @@ class OrderRepo
             $query->where('user_id', $params['user_id']);
         }
 
+        // Исключаем заказы самого пользователя из общего списка (index).
+        if (isset($params['exclude_user_id'])) {
+            $query->where('user_id', '!=', $params['exclude_user_id']);
+        }
+
         if (isset($params['executor_id'])) {
             $query->where('executor_id', $params['executor_id']);
         }

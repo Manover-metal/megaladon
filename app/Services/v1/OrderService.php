@@ -57,7 +57,7 @@ class OrderService extends BaseService
         $offer = $offerRepo->getByUserIdAndOrderId($orderId, $user->id);
 
         if (!is_null($offer)) {
-            return $this->error(406, 'Вы уже откликались на этот заказ');
+            return $this->error(406, __('order.already_offered'));
         }
 
         $data['order_id'] = $orderId;
@@ -69,7 +69,7 @@ class OrderService extends BaseService
         $order = Order::find($orderId);
         event(new OfferCreatedEvent($order));
 
-        return $this->ok('Предложение отправленно');
+        return $this->ok(__('order.offer_sent'));
     }
 
     public function update(int $id, array $data)
@@ -77,13 +77,13 @@ class OrderService extends BaseService
         $order = Order::find($id);
 
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = auth('api')->user();
 
         if ($order->user_id != $user->id) {
-            return $this->error(403, 'Вы не можете редактировать чужой заказ');
+            return $this->error(403, __('order.cannot_edit_foreign'));
         }
         $order->media()->delete();
 
@@ -99,11 +99,18 @@ class OrderService extends BaseService
 
         $this->orderRepo->update($order, $data);
 
-        return $this->ok('Заказ сохранён');
+        return $this->ok(__('order.saved'));
     }
 
     public function index($params)
     {
+        // В общем списке заказов не показываем заказы самого пользователя.
+        // Для гостя (нет токена) фильтр не применяется — видны все заказы.
+        $user = $this->apiAuthUser();
+        if ($user) {
+            $params['exclude_user_id'] = $user->id;
+        }
+
         $orders = $this->orderRepo->index($params);
 
         return $this->resultCollections($orders, OrderPresenter::class, 'list');
@@ -113,7 +120,7 @@ class OrderService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Ошибка авторизации');
+            return $this->errFobidden(__('order.auth_error'));
         }
         $params['user_id'] = $user->id;
         $orders = $this->orderRepo->index($params);
@@ -124,7 +131,7 @@ class OrderService extends BaseService
     {
         $executor = $this->apiAuthUser()->executor()->first();
         if (is_null($executor)) {
-            return $this->errNotFound('Исполнитель не найден');
+            return $this->errNotFound(__('order.executor_not_found'));
         }
         $params['executor_id'] = $executor->id;
         $orders = $this->orderRepo->index($params);
@@ -135,7 +142,7 @@ class OrderService extends BaseService
     {
         $order = Order::with('media', 'category', 'executor')->find($id);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = $this->apiAuthUser();
@@ -157,15 +164,15 @@ class OrderService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(401, 'Unauthorized');
+            return $this->error(401, __('order.unauthorized'));
         }
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         if ($order->user_id != $user->id) {
-            return $this->error(403, 'У вас нет доступа для просмотра предложений этого заказа');
+            return $this->error(403, __('order.offers_no_access'));
         }
 
         $offerRepo = new OrderOfferRepo();
@@ -177,16 +184,16 @@ class OrderService extends BaseService
     {
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Требуется авторизация');
+            return $this->errFobidden(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
-            return $this->error(403, 'У вас нет доступа для просмотра предложений этого заказа');
+            return $this->error(403, __('order.offers_no_access'));
         }
 
         $offerRepo = new OrderOfferRepo();
@@ -201,16 +208,16 @@ class OrderService extends BaseService
     {
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Требуется авторизация');
+            return $this->errFobidden(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
-            return $this->error(406, 'Вы не можете удалить чужой заказ');
+            return $this->error(406, __('order.cannot_delete_foreign'));
         }
 
         $this->orderRepo->update($order, ['status' => Order::STATUS_ARCHIVE]);
@@ -222,20 +229,20 @@ class OrderService extends BaseService
     {
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Требуется авторизация');
+            return $this->errFobidden(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
-            return $this->error(406, 'Вы не можете завершить чужой заказ');
+            return $this->error(406, __('order.cannot_complete_foreign'));
         }
 
         if ($order->status != Order::STATUS_HAS_EXECUTOR) {
-            return $this->error(406, 'Чтобы завершить заказ он должен иметь статус "В работе"');
+            return $this->error(406, __('order.must_be_in_progress'));
         }
 
         $this->orderRepo->update($order, ['status' => Order::STATUS_COMPLETED]);
@@ -247,21 +254,21 @@ class OrderService extends BaseService
     {
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Требуется авторизация');
+            return $this->errFobidden(__('order.unauthorized'));
         }
         
         $offer = OrderOffer::find($offerId);
         if (is_null($offer)) {
-            return $this->errNotFound('Предложение не найдено');
+            return $this->errNotFound(__('order.offer_not_found'));
         }
 
         if ($order->user_id != $user->id) {
-            return $this->error(406, 'Вы не можете принять предложение чужого заказа');
+            return $this->error(406, __('order.cannot_accept_foreign_offer'));
         }
 
         $executor = Executor::where('user_id', $offer->user_id)->first();
@@ -280,25 +287,25 @@ class OrderService extends BaseService
     {
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
         
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Требуется авторизация');
+            return $this->errFobidden(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
-            return $this->error(406, 'Вы не можете оценить исполнителя чужого заказа');
+            return $this->error(406, __('order.cannot_rate_foreign'));
         }
         
         if ($order->status != Order::STATUS_COMPLETED) {
-            return $this->error(406, 'Вы пока не можете оценить исполнителя');
+            return $this->error(406, __('order.cannot_rate_yet'));
         }
 
         $executor = Executor::find($order->executor_id);
         if (is_null($executor)) {
-            return $this->errNotFound('Исполнитель не найден');
+            return $this->errNotFound(__('order.executor_not_found'));
         }
 
         $executor->ratings()->create([
@@ -315,22 +322,22 @@ class OrderService extends BaseService
     {
         $order = Order::find($orderId);
         if (is_null($order)) {
-            return $this->errNotFound('Заказ не найден');
+            return $this->errNotFound(__('order.not_found'));
         }
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Ошибка авторизации');
+            return $this->errFobidden(__('order.auth_error'));
         }
 
         $executor = Executor::find($data['executor_id']);
         if (is_null($executor)) {
-            return $this->errNotFound('Исполнитель не найден');
+            return $this->errNotFound(__('order.executor_not_found'));
         }
 
         $orderOffer = OrderOffer::where('order_id', $order->id)->where('user_id', $executor->user_id)->first();
         if (is_null($orderOffer)) {
-            return $this->errNotAcceptable('Исполнитель не отправлял вам предожение на этот заказ');
+            return $this->errNotAcceptable(__('order.offer_not_sent_to_you'));
         }
 
         $chat = $order->chatable()->create([]);

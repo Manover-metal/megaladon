@@ -50,6 +50,11 @@ class StoreRepo
             $query->where('city_id', $params['city_id']);
         }
 
+        // Скрываем магазин самого пользователя из списка металлопроката.
+        if (isset($params['exclude_user_id'])) {
+            $query->where('user_id', '!=', $params['exclude_user_id']);
+        }
+
         return $query;
     }
 

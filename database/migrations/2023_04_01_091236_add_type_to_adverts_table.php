@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasColumn('adverts', 'type')) {
+            return;
+        }
+
         Schema::table('adverts', function (Blueprint $table) {
             $table->enum('type', ['service', 'advert'])->default('advert')->after('id');
         });

@@ -18,6 +18,12 @@ class BaseService
     {
         return $this->error(403, $message);
     }
+
+    // 402 Payment Required — для случаев «нужна подписка/оплата».
+    protected function errPaymentRequired($message): array
+    {
+        return $this->error(402, $message);
+    }
     protected function errNotFound($message): array
     {
         return $this->error(404, $message);

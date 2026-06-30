@@ -8,6 +8,10 @@ class AddTypeToAdvertsTable extends Migration
 {
     public function up()
     {
+        if (Schema::hasColumn('adverts', 'type')) {
+            return;
+        }
+
         Schema::table('adverts', function (Blueprint $table) {
             $table->string('type')->default('advert')->after('category_id');
         });

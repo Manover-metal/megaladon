@@ -25,15 +25,15 @@ class InvoiceService extends BaseService
     {
         $executor = $user->executor;
         if (!$executor) {
-            return $this->errNotFound('Исполнитель не найден');
+            return $this->errNotFound(__('invoice.executor_not_found'));
         }
 
         $subscription = Subscription::find($data['subscription_id']);
         if (!$subscription) {
-            return $this->errNotFound('Подписка не найдена');
+            return $this->errNotFound(__('invoice.subscription_not_found'));
         }
         if ($subscription->type !== Subscription::EXECUTOR) {
-            return $this->errValidate('Данная подписка не предназначена для исполнителя');
+            return $this->errValidate(__('invoice.subscription_not_for_executor'));
         }
 
         if ($subscription->price == 0) {
@@ -56,15 +56,15 @@ class InvoiceService extends BaseService
     {
         $store = $user->store;
         if (!$store) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('invoice.store_not_found'));
         }
 
         $subscription = Subscription::find($data['subscription_id']);
         if (!$subscription) {
-            return $this->errNotFound('Подписка не найдена');
+            return $this->errNotFound(__('invoice.subscription_not_found'));
         }
         if ($subscription->type !== Subscription::STORE) {
-            return $this->errValidate('Данная подписка не предназначена для магазина');
+            return $this->errValidate(__('invoice.subscription_not_for_store'));
         }
 
         if ($subscription->price == 0) {
@@ -88,7 +88,7 @@ class InvoiceService extends BaseService
 
         $invoice = Invoice::find($invoiceId);
         if (!$invoice) {
-            return $this->errNotFound('Счет не найден');
+            return $this->errNotFound(__('invoice.invoice_not_found'));
         }
 
         $check = $this->checkTransaction($data['transaction_id']);
@@ -134,13 +134,13 @@ class InvoiceService extends BaseService
 
         $responseData = new SimpleXMLElement($response->getBody()->getContents());
         if ($responseData->pg_status == 'error') {
-            return $this->error(500, 'Не удалось проверить транзакцию. Код ошибки: ' . $responseData->pg_error_code . ', текст ошибки: ' . $responseData->pg_error_description);
+            return $this->error(500, __('invoice.transaction_check_failed', ['code' => $responseData->pg_error_code, 'description' => $responseData->pg_error_description]));
         }
         if ($responseData->pg_transaction_status == 'ok') {
             return $this->ok();
         }
 
-        return $this->errNotAcceptable('Транзакция не была оплачена');
+        return $this->errNotAcceptable(__('invoice.transaction_not_paid'));
     }
 
     private function generatePaymentParams($transaction_id)

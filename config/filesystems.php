@@ -33,6 +33,14 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),
+            // Под public/ кладём то, что раздаётся вебом. Public-видимость даёт
+            // папкам 0755, файлам 0644 — иначе каталоги создаются 0700 и nginx
+            // (другой пользователь) не может зайти в них → отдаёт 404.
+            'visibility' => 'public',
+            'permissions' => [
+                'file' => ['public' => 0644, 'private' => 0600],
+                'dir' => ['public' => 0755, 'private' => 0700],
+            ],
         ],
 
         'public' => [

@@ -41,7 +41,7 @@ class UserService extends BaseService
     {
         $user = User::find($userId);
         if (is_null($user)) {
-            return $this->errNotFound('Пользователь не найден');
+            return $this->errNotFound(__('user.not_found'));
         }
         return $this->result(['user' => (new UserPresenter($user))->profile()]);
     }
@@ -50,7 +50,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (!Hash::check($data['password'], $user->password)) {
-            return $this->error(401, 'Введен неверный пароль');
+            return $this->error(401, __('user.wrong_password'));
         }
         (new PhoneConfirmationService())->sendCode($user, $data['new_phone']);
 
@@ -60,12 +60,12 @@ class UserService extends BaseService
     public function changePassword(User $user, array $data)
     {
         if (!Hash::check($data['old_password'], $user->password)) {
-            return $this->error(401, 'Введен неверный пароль');
+            return $this->error(401, __('user.wrong_password'));
         }
 
         $this->userRepo->update($user->id, ['password' => Hash::make($data['password'])]);
 
-        return $this->ok('Пароль был успешно изменён');
+        return $this->ok(__('user.password_changed'));
     }
 
     public function endChangePhone($data)
@@ -75,22 +75,22 @@ class UserService extends BaseService
         $phoneConfirmation = $pcRepo->getByUserIdAndPhone($user->id, $data['phone']);
         
         if (is_null($phoneConfirmation)) {
-            return $this->errNotFound('Не удалось найти код подтверждения, попробуйте чуть позднее');
+            return $this->errNotFound(__('user.confirmation_code_not_found'));
         }
 
         if ($phoneConfirmation->code != $data['code']) {
-            return $this->error(406, 'Введен не верный код-подтверждения');
+            return $this->error(406, __('user.wrong_confirmation_code'));
         }
 
         $this->userRepo->update($user->id, ['phone' => $data['phone']]);
-        return $this->ok('Телефон изменён');
+        return $this->ok(__('user.phone_changed'));
     }
 
     public function updateToken(array $data) : array
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, 'Пользователь не авторизован');
+            return $this->error(403, __('user.unauthorized'));
         }
         $data = [
             'device_token' => $data['token'],
@@ -105,7 +105,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, 'Пользователь не авторизован');
+            return $this->error(403, __('user.unauthorized'));
         }
         $data = [
             'device_token' => '',
@@ -120,7 +120,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, 'Пользователь не авторизован');
+            return $this->error(403, __('user.unauthorized'));
         }
 
         return $this->result([
@@ -133,14 +133,23 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, 'Пользователь не авторизован');
+            return $this->error(403, __('user.unauthorized'));
         }
 
-        // push_notifications — это сам флаг «пуши вкл/выкл», он не зависит от
-        // device_token. filter_var, т.к. UserRepo::update идёт через
-        // query-builder и касты модели не применяются ((bool)"0" === true).
+        // push_notifications — это сам флаг «пуши вкл/выкл». filter_var, т.к.
+        // UserRepo::update идёт через query-builder и касты модели не
+        // применяются ((bool)"0" === true).
+        $pushEnabled = filter_var($data['push_notifications'], FILTER_VALIDATE_BOOLEAN);
+
+        // Включить пуши без device_token нельзя: токен приходит только когда
+        // уведомления разрешены в ОС. Нет токена — некуда слать пуш, поэтому
+        // отдаём понятную локализованную ошибку, а флаг не трогаем.
+        if ($pushEnabled && empty($data['device_token'])) {
+            return $this->error(422, __('push.enable_failed'));
+        }
+
         $updateData = [
-            'push_notifications' => filter_var($data['push_notifications'], FILTER_VALIDATE_BOOLEAN),
+            'push_notifications' => $pushEnabled,
         ];
         // device_token обновляем только если он реально передан.
         if (array_key_exists('device_token', $data)) {

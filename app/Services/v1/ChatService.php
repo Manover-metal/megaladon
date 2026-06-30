@@ -32,7 +32,7 @@ class ChatService extends BaseService
         $chat = Chat::find($chatId);
 
         if (is_null($chat)) {
-            return $this->errNotFound('Чат не найден');
+            return $this->errNotFound(__('chat.chat_not_found'));
         }
 
         $messages = $this->chatRepo->indexMessages($chatId, $params);
@@ -58,17 +58,17 @@ class ChatService extends BaseService
         $chatMessage = ChatMessage::find($message_id);
 
         if (is_null($chatMessage)) {
-            return $this->errNotFound('Сообщение не найдено');
+            return $this->errNotFound(__('chat.message_not_found'));
         }
 
         if ($chatMessage->user_id != $user->id) {
-            return $this->error(406, 'Вы не можете редактировать чужие сообщения');
+            return $this->error(406, __('chat.cannot_edit_foreign_message'));
         }
 
         $message = $this->chatRepo->editMessage($chatMessage, $data);
 
         return $this->result([
-            'message' => 'Сообщение изменено',
+            'message' => __('chat.message_updated'),
             'data' => $message,
         ]);
     }
@@ -78,16 +78,16 @@ class ChatService extends BaseService
         $chatMessage = ChatMessage::find($message_id);
 
         if (is_null($chatMessage)) {
-            return $this->errNotFound('Сообщение не найдено');
+            return $this->errNotFound(__('chat.message_not_found'));
         }
 
         if ($chatMessage->user_id != $user->id) {
-            return $this->error(406, 'Вы не можете редактировать чужие сообщения');
+            return $this->error(406, __('chat.cannot_edit_foreign_message'));
         }
 
         $this->chatRepo->deleteMessage($message_id);
 
-        return $this->ok('Сообщение удалено');
+        return $this->ok(__('chat.message_deleted'));
     }
 
     private function attachMembersToChat(Chat $chat, array $userIds)

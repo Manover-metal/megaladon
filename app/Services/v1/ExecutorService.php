@@ -24,13 +24,13 @@ class ExecutorService extends BaseService
         $user = auth('api')->user();
 
         if (is_null($user)) {
-            return $this->errNotFound('Пользователь не найден');
+            return $this->errNotFound(__('executor.user_not_found'));
         }
 
         $executor = $this->executorRepo->findByUserId($user->id);
 
         if (is_null($executor)) {
-            return $this->errValidate('Вы не зарегистрированны как исполнитель');
+            return $this->errValidate(__('executor.not_registered'));
         }
 
         $executor->services()->sync($data['services']);
@@ -58,7 +58,7 @@ class ExecutorService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Ошибка авторизации');
+            return $this->errFobidden(__('executor.auth_error'));
         }
 
         $favorites = (new FavoriteRepo())->indexMy($user->id);
@@ -70,14 +70,14 @@ class ExecutorService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Ошибка авторизации');
+            return $this->errFobidden(__('executor.auth_error'));
         }
 
         $data['user_id'] = $user->id;
 
         (new FavoriteRepo())->store($data);
 
-        return $this->ok('Исполнитель добавлен в избранные');
+        return $this->ok(__('executor.added_to_favorites'));
     }
 
     public function checkExecutor(User $user)
@@ -85,10 +85,10 @@ class ExecutorService extends BaseService
         $executor = $user->executor()->first();
             
         if (is_null($executor)) {
-            return $this->errFobidden('Вы не зарегистрированны как Исполнитель.');
+            return $this->errFobidden(__('executor.not_registered'));
         }
         if (is_null($executor->activeInvoice())) {
-            return $this->errFobidden('У вас отсутствует подписка');
+            return $this->errPaymentRequired(__('executor.no_subscription'));
         }
 
         return $this->ok();

@@ -33,15 +33,15 @@ class AuthService extends BaseService
     {
         $user = $this->userRepo->getUserByPhone($data['phone']);
         if (is_null($user)) {
-            return $this->errNotFound('Неверные номер пользователя или пароль');
+            return $this->errNotFound(__('account.invalid_credentials'));
         }
 
         if ($user->is_phone_confirmed == 0) {
-            return $this->error(406, 'Сначала подтвердите номер телефона');
+            return $this->error(406, __('account.confirm_phone_first'));
         }
         
         if (!Hash::check($data['password'], $user->password)) {
-            return $this->error(401, 'Неверные номер пользователя или пароль');
+            return $this->error(401, __('account.invalid_credentials'));
         }
 
         $token = $user->createToken('api')->plainTextToken;
@@ -55,7 +55,7 @@ class AuthService extends BaseService
     public function register(array $data) : array
     {
         if ($this->userRepo->getUserByPhone($data['phone'])) {
-            return $this->errValidate('Пользователь с таким номером существует');
+            return $this->errValidate(__('account.phone_exists'));
         }
 
         $user = $this->userRepo->store($data);
@@ -77,7 +77,7 @@ class AuthService extends BaseService
         $executorRepo = new ExecutorRepo();
         $executor = $executorRepo->findByUserId($user->id);
         if (!is_null($executor)) {
-            return $this->error(406, 'Вы уже зарегистированны как исполнитель');
+            return $this->error(406, __('account.already_executor'));
         }
 
         $data['user_id'] = $user->id;
@@ -102,7 +102,7 @@ class AuthService extends BaseService
 
         $storeRepo = new StoreRepo();
         if (!is_null($storeRepo->getByUserId($user->id))) {
-            return $this->error(406, 'У вас уже есть зарегистрированный магазин');
+            return $this->error(406, __('account.already_has_store'));
         }
 
         $data['user_id'] = $user->id;
@@ -125,11 +125,11 @@ class AuthService extends BaseService
         $code = (new PhoneConfirmationRepo())->getByPhone($data['phone']);
 
         if (!$code) {
-            return $this->errNotFound('Номер телефона не корректен');
+            return $this->errNotFound(__('account.phone_invalid'));
         }
 
         if ($code->code != $data['code']) {
-            return $this->error(400, 'Код подтверждения указан неверно');
+            return $this->error(400, __('account.code_invalid'));
         }
 
         $this->userRepo->confirmPhone($data['phone']);
@@ -146,7 +146,7 @@ class AuthService extends BaseService
     {
         $user = $this->userRepo->getUserByPhone($data['phone']);
         if (is_null($user)) {
-            return $this->errNotFound('Пользователь с таким номером не найден');
+            return $this->errNotFound(__('account.user_not_found'));
         }
 
         $newPassword = Str::random(10);
@@ -157,7 +157,7 @@ class AuthService extends BaseService
                 'login' => $this->smsConfig['login'],
                 'psw' => $this->smsConfig['password'],
                 'phones' => substr($user->phone, 1, 11),
-                'mes' => 'Ваш новый пароль: ' . $newPassword,
+                'mes' => __('account.new_password_sms', ['password' => $newPassword]),
                 'sender' => 'Manover',
                 'translit' => 0,
                 'time' => 0,
@@ -172,13 +172,13 @@ class AuthService extends BaseService
             $jsonResponse = json_decode($response->getBody()->getContents(), true);
             Log::info($jsonResponse);
             if (isset($jsonResponse['error'])) {
-                return $this->errService('Не удалось отправить смс код');
+                return $this->errService(__('account.sms_send_failed'));
             }
         }
 
         $this->userRepo->update($user->id, ['password' => Hash::make($newPassword)]);
 
-        return $this->ok('Смс с паролем было высланно на указанный номер');
+        return $this->ok(__('account.password_sms_sent'));
     }
 
     public function logout()

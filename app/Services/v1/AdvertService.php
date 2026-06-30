@@ -27,7 +27,7 @@ class AdvertService extends BaseService
         $advert = $this->advertRepo->info($id);
         
         if (is_null($advert)) {
-            return $this->errNotFound('Объявление не найдено');
+            return $this->errNotFound(__('advert.not_found'));
         }
 
         return $this->result([
@@ -62,7 +62,7 @@ class AdvertService extends BaseService
             }
         }
 
-        return $this->ok('Объявление созданно');
+        return $this->ok(__('advert.created'));
     }
 
     public function update($id, array $data)
@@ -70,13 +70,13 @@ class AdvertService extends BaseService
         $advert = Advert::find($id);
 
         if (is_null($advert)) {
-            return $this->errNotFound('Объявление не найдено');
+            return $this->errNotFound(__('advert.not_found'));
         }
 
         $user = auth('api')->user();
 
         if ($advert->user_id != $user->id) {
-            return $this->error(403, 'Вы не можете редактировать чужой объявление');
+            return $this->error(403, __('advert.cannot_edit_foreign'));
         }
         if (isset($data['type']) && $data['type'] == Advert::TYPE_SERVICE) {
             $checkExecutor = (new ExecutorService())->checkExecutor($user);
@@ -98,7 +98,7 @@ class AdvertService extends BaseService
 
         $this->advertRepo->update($advert->id, $data);
 
-        return $this->ok('Объявление сохранёно');
+        return $this->ok(__('advert.saved'));
     }
 
     public function delete($id)
@@ -106,25 +106,25 @@ class AdvertService extends BaseService
         $advert = Advert::find($id);
 
         if (is_null($advert)) {
-            return $this->errNotFound('Объявление не найдено');
+            return $this->errNotFound(__('advert.not_found'));
         }
 
         $advert->media()->delete();
         $advert->delete();
 
-        return $this->ok('Объявление удалено');
+        return $this->ok(__('advert.deleted'));
     }
 
     public function createChat(int $advertId)
     {
         $advert = Advert::find($advertId);
         if (is_null($advert)) {
-            return $this->errNotFound('Объявление не найдено');
+            return $this->errNotFound(__('advert.not_found'));
         }
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Ошибка авторизации');
+            return $this->errFobidden(__('advert.auth_error'));
         }
 
         $chat = $advert->chatable()->create([]);

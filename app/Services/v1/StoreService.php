@@ -30,7 +30,7 @@ class StoreService extends BaseService
     {
         $store = $this->storeRepo->getByUserId($user->id);
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         if (isset($data['contacts'])) {
@@ -44,11 +44,18 @@ class StoreService extends BaseService
 
         $this->storeRepo->update($store->id, $data);
 
-        return $this->ok('Данные магазина обновленны');
+        return $this->ok(__('store.updated'));
     }
 
     public function index(array $params)
     {
+        // В списке металлопроката не показываем магазин самого пользователя.
+        // Для гостя (нет токена) фильтр не применяется — видны все магазины.
+        $user = $this->apiAuthUser();
+        if ($user) {
+            $params['exclude_user_id'] = $user->id;
+        }
+
         $stores = $this->storeRepo->index($params);
         $count = $this->storeRepo->count($params);
         return $this->resultCollections($stores, StorePresenter::class, 'list', $count);
@@ -59,7 +66,7 @@ class StoreService extends BaseService
         $store = Store::with('contacts', 'media')->find($id);
 
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         return $this->result(['store' => (new StorePresenter($store))->detail()]);
@@ -69,16 +76,16 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Unauthorized');
+            return $this->errFobidden(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         if ($store->media()->where('active', 1)->count() >= 2) {
-            return $this->error(406, 'Вы не можете загрузить больше 2х прайс-листов');
+            return $this->error(406, __('store.price_upload_limit', ['limit' => 2]));
         }
 
         $path = $data['file']->store('public/store/');
@@ -93,21 +100,21 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Unauthorized');
+            return $this->errFobidden(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         $file = $store->media()->where('id', $id)->first();
         if (is_null($file)) {
-            return $this->errNotFound('Прайс-лист не найден');
+            return $this->errNotFound(__('store.price_not_found'));
         }
 		
 		if ($store->media()->where('active', 1)->count() >= 2) {
-			return $this->errNotAcceptable('Вы не можете активировать больше 2х прайс-листов');
+			return $this->errNotAcceptable(__('store.price_activate_limit', ['limit' => 2]));
 		}
 
         $store->media()->where('id', $id)->update(['active' => 1]);
@@ -119,17 +126,17 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Unauthorized');
+            return $this->errFobidden(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         $file = $store->media()->where('id', $id)->first();
         if (is_null($file)) {
-            return $this->errNotFound('Прайс-лист не найден');
+            return $this->errNotFound(__('store.price_not_found'));
         }
 
         $store->media()->where('id', $id)->update(['active' => 0]);
@@ -141,17 +148,17 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Unauthorized');
+            return $this->errFobidden(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         $file = $store->media()->where('id', $id)->first();
         if (is_null($file)) {
-            return $this->errNotFound('Прайс-лист не найден');
+            return $this->errNotFound(__('store.price_not_found'));
         }
 
         $store->media()->where('id', $id)->delete();
@@ -163,7 +170,7 @@ class StoreService extends BaseService
     {
         $store = Store::find($storeId);
         if (is_null($store)) {
-            return $this->errNotFound('Магазин не найден');
+            return $this->errNotFound(__('store.not_found'));
         }
 
         $user = $this->apiAuthUser();
@@ -172,7 +179,12 @@ class StoreService extends BaseService
         }
 
         if ($store->user_id == $user->id) {
-            return $this->error(406, 'Вы не можете оценить свой магазин');
+            return $this->error(406, __('store.cannot_rate_own'));
+        }
+
+        // Один пользователь может оценить магазин только один раз.
+        if ($store->ratings()->where('user_id', $user->id)->exists()) {
+            return $this->error(409, __('store.already_rated'));
         }
 
         $store->ratings()->create([

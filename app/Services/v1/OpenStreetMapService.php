@@ -20,7 +20,7 @@ class OpenStreetMapService extends BaseService
         $response = $this->sendRequest($data['address']);
 
         if ($response->getStatusCode() != 200) {
-            return $this->errService('Не удалось получить адрес, попробуйте позже');
+            return $this->errService(__('geo.address_failed'));
         }
 
         $responseData = json_decode($response->getBody()->getContents(), true);

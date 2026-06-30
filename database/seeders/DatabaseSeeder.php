@@ -21,5 +21,6 @@ class DatabaseSeeder extends Seeder
         $this->call(OrderCategorySeeder::class);
         $this->call(ServiceTypeSeeder::class);
         $this->call(CompanyTypeSeeder::class);
+        $this->call(AdminSeeder::class);
     }
 }

@@ -18,8 +18,16 @@ class AdvertCategorySeeder extends Seeder
         ];
 
         $now = now();
-        $rows = array_map(fn($name) => ['name' => $name, 'parent_id' => 0, 'created_at' => $now, 'updated_at' => $now], $categories);
 
-        DB::table('advert_categories')->insertOrIgnore($rows);
+        // Каноничная таблица категорий объявлений — ad_categories (модель
+        // AdCategory, FK adverts.category_id, валидация exists:ad_categories).
+        // Старая advert_categories больше не используется.
+        // updateOrInsert — идемпотентно: повторный запуск не плодит дубликаты.
+        foreach ($categories as $name) {
+            DB::table('ad_categories')->updateOrInsert(
+                ['name' => $name, 'parent_id' => 0],
+                ['updated_at' => $now, 'created_at' => $now],
+            );
+        }
     }
 }
