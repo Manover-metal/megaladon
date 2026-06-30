@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\v1;
 use App\Http\Controllers\ApiController;
 use App\Http\Requests\User\ChangePasswordRequest;
 use App\Http\Requests\User\ChangePhoneRequest;
+use App\Http\Requests\User\ChangePushStatusRequest;
 use App\Http\Requests\User\EndChangePhoneRequest;
 use App\Http\Requests\User\GetProfileRequest;
 use App\Http\Requests\User\UpdateProfileRequest;
@@ -74,5 +75,15 @@ class UserController extends ApiController
     public function disableNotifications()
     {
         return $this->result($this->userService->disableNotifications());
+    }
+
+    public function pushStatus()
+    {
+        return $this->result($this->userService->pushStatus());
+    }
+
+    public function changePushStatus(ChangePushStatusRequest $request)
+    {
+        return $this->result($this->userService->changePushStatus($request->validated()));
     }
 }

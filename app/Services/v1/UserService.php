@@ -115,4 +115,42 @@ class UserService extends BaseService
 
         return $this->ok();
     }
+
+    public function pushStatus(): array
+    {
+        $user = $this->apiAuthUser();
+        if (is_null($user)) {
+            return $this->error(403, 'Пользователь не авторизован');
+        }
+
+        return $this->result([
+            'push_notifications' => (bool) $user->push_notifications,
+            'device_token' => $user->device_token,
+        ]);
+    }
+
+    public function changePushStatus(array $data): array
+    {
+        $user = $this->apiAuthUser();
+        if (is_null($user)) {
+            return $this->error(403, 'Пользователь не авторизован');
+        }
+
+        // push_notifications — это сам флаг «пуши вкл/выкл», он не зависит от
+        // device_token. filter_var, т.к. UserRepo::update идёт через
+        // query-builder и касты модели не применяются ((bool)"0" === true).
+        $updateData = [
+            'push_notifications' => filter_var($data['push_notifications'], FILTER_VALIDATE_BOOLEAN),
+        ];
+        // device_token обновляем только если он реально передан.
+        if (array_key_exists('device_token', $data)) {
+            $updateData['device_token'] = $data['device_token'];
+        }
+
+        $this->userRepo->update($user->id, $updateData);
+
+        return $this->result([
+            'push_notifications' => $updateData['push_notifications'],
+        ]);
+    }
 }

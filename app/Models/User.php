@@ -35,6 +35,14 @@ class User extends Authenticatable
         'password',
     ];
 
+    /**
+     * Куда канал FCM отправляет пуш для этого пользователя.
+     */
+    public function routeNotificationForFcm()
+    {
+        return $this->device_token;
+    }
+
     public function city()
     {
         return $this->belongsTo(City::class);
