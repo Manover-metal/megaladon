@@ -29,7 +29,7 @@ class ChatPresenter extends BasePresenter
             'id' => $this->id,
             'user' => (new UserPresenter($this->user))->short(),
             'message' => $this->message,
-            'file' => $this->file_url,
+            'file' => $this->file_url ? url($this->file_url) : null,
             'is_readed' => (boolean) $this->is_readed,
             'created_at' => $this->created_at,
         ];

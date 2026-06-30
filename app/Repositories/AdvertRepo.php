@@ -43,6 +43,10 @@ class AdvertRepo
             $query->where('category_id', $params['category']);
         }
 
+        if (isset($params['type'])) {
+            $query->where('type', $params['type']);
+        }
+
         if(isset($params['city_id'])) {
             $query->where('city_id', $params['city_id']);
         }

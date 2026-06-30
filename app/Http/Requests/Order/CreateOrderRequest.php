@@ -13,7 +13,7 @@ class CreateOrderRequest extends FormRequest
      */
     public function authorize()
     {
-        return true;
+        return auth('api')->check();
     }
 
     /**

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, CrudTrait;
 
     protected $fillable = ['title', 'description', 'price_recommended', 'price_max', 'execution_days', 'category_id', 'status', 'user_id', 'city_id', 'executor_id'];
 
@@ -49,12 +50,12 @@ class Order extends Model
 
     public function category()
     {
-        return $this->hasOne(OrderCategory::class, 'id', 'category_id');
+        return $this->belongsTo(OrderCategory::class, 'category_id');
     }
 
     public function city()
     {
-        return $this->hasOne(City::class, 'id', 'city_id');
+        return $this->belongsTo(City::class, 'city_id');
     }
 
     public function getStatusName() : string

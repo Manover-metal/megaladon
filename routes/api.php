@@ -44,6 +44,7 @@ Route::group(['guard' => 'api'], function () {
         Route::post('/register', [AuthController::class, 'register']);
         Route::post('/confirm-code', [AuthController::class, 'confirmCode']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+        Route::post('/pusher-login', [AuthController::class, 'pusherLogin'])->middleware('api');
         
         Route::group(['middleware' => 'api'], function () {
             // Route::post('/send-code', [AuthController::class, 'sendCode']);

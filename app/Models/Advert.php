@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Advert extends Model
 {
-    use HasFactory;
+    use HasFactory, CrudTrait;
+
+    const TYPE_SERVICE = 'service';
+    const TYPE_ADVERT = 'advert';
 
     protected $fillable = [
+        'type',
         'user_id',
         'title',
         'description',
@@ -37,7 +42,7 @@ class Advert extends Model
 
     public function category()
     {
-        return $this->belongsTo(AdvertCategory::class, 'category_id');
+        return $this->belongsTo(AdCategory::class, 'category_id');
     }
 
     public function chatable()

@@ -24,11 +24,12 @@ class CreateAdvertRequest extends FormRequest
     public function rules()
     {
         return [
+            'type' => ['required', 'in:service,advert'],
             'title' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'in:advert,service'],
             'description' => ['nullable', 'string'],
-            'price' => ['required', 'numeric'],
-            'category_id' => ['required', 'integer', 'exists:advert_categories,id'],
+            'price' => ['nullable', 'numeric'],
+            'category_id' => ['required', 'integer', 'exists:ad_categories,id'],
             'city_id' => ['required', 'integer', 'exists:cities,id'],
             'additional_phone' => ['nullable', 'string', 'starts_with:+'],
             'files' => ['nullable', 'array'],

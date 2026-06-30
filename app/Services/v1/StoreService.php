@@ -77,11 +77,11 @@ class StoreService extends BaseService
             return $this->errNotFound('Магазин не найден');
         }
 
-        if ($store->media()->count() >= 2) {
+        if ($store->media()->where('active', 1)->count() >= 2) {
             return $this->error(406, 'Вы не можете загрузить больше 2х прайс-листов');
         }
 
-        $path = $data['file']->store('public/store/'.$store->id);
+        $path = $data['file']->store('public/store/');
         $store->media()->create([
             'storage_link' => Storage::url($path), 
         ]);
@@ -105,6 +105,10 @@ class StoreService extends BaseService
         if (is_null($file)) {
             return $this->errNotFound('Прайс-лист не найден');
         }
+		
+		if ($store->media()->where('active', 1)->count() >= 2) {
+			return $this->errNotAcceptable('Вы не можете активировать больше 2х прайс-листов');
+		}
 
         $store->media()->where('id', $id)->update(['active' => 1]);
 
@@ -171,7 +175,7 @@ class StoreService extends BaseService
             return $this->error(406, 'Вы не можете оценить свой магазин');
         }
 
-        $store->rating()->create([
+        $store->ratings()->create([
             'user_id' => $user->id,
             'rate' => $rate,
         ]);
@@ -183,14 +187,14 @@ class StoreService extends BaseService
 
     public function updateRating(Store $store) : void
     {
-        $ratings = $store->rating()->get();
+        $ratings = $store->ratings()->get();
         
         $sumRating = 0;
         foreach ($ratings as $rating) {
             $sumRating += $rating->rate;
         }
 
-        $countRates = $store->rating()->count();
+        $countRates = $store->ratings()->count();
 
         $this->storeRepo->update($store->id, ['rating' => round($sumRating / $countRates, 1)]);
     }

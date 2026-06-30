@@ -2,17 +2,20 @@
 
 namespace App\Models;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Executor extends Model
 {
-    use HasFactory;
+    use HasFactory, CrudTrait;
 
     protected $fillable = [
         'user_id', 
+        'city_id',
         'name',
+        'description',
         'bin',
         'lat',
         'lon',
@@ -22,7 +25,7 @@ class Executor extends Model
 
     public function services()
     {
-        return $this->belongsToMany(OrderCategory::class, 'executor_service_types');
+        return $this->belongsToMany(ServiceType::class, 'executor_service_types');
     }
 
     public function user()
@@ -30,7 +33,7 @@ class Executor extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function rating()
+    public function ratings()
     {
         return $this->morphMany(Rating::class, 'ratingable');
     }
@@ -38,6 +41,11 @@ class Executor extends Model
     public function invoices()
     {
         return $this->morphMany(Invoice::class, 'invoiceable');
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
     }
 
     public function activeInvoice()

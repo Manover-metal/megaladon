@@ -24,7 +24,6 @@ class UpdateStoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'type_id' => ['nullable', 'integer', 'exists:company_types,id'],
             'name' => ['nullable', 'string', 'min:3'],
             'bin' => ['nullable', 'string', 'min:12', 'max:13'],
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],

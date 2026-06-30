@@ -11,7 +11,7 @@ class OrderPresenter extends BasePresenter
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'description' => mb_strimwidth($this->description, 0, 128, "..."),
+            'description' => $this->description,
             'count_offers' => $this->countOffers(),
             'city' => (new CityPresenter($this->city))->list(),
             'created_at' => date('d.m.Y', strtotime($this->created_at)),

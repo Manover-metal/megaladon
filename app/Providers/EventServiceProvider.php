@@ -3,8 +3,14 @@
 namespace App\Providers;
 
 use App\Events\ExecutorRatedEvent;
+use App\Events\NewMessageEvent;
+use App\Events\OfferAcceptedEvent;
+use App\Events\OfferCreatedEvent;
 use App\Events\StoreRatedEvent;
 use App\Listeners\ExecutorRatedListener;
+use App\Listeners\NewMessageListener;
+use App\Listeners\OfferAcceptedListener;
+use App\Listeners\OfferCreatedListener;
 use App\Listeners\StoreRatedListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -29,6 +35,18 @@ class EventServiceProvider extends ServiceProvider
 
         StoreRatedEvent::class => [
             StoreRatedListener::class,
+        ],
+
+        OfferCreatedEvent::class => [
+            OfferCreatedListener::class,
+        ],
+        
+        OfferAcceptedEvent::class => [
+            OfferAcceptedListener::class,
+        ],
+
+        NewMessageEvent::class => [
+            NewMessageListener::class,
         ],
     ];
 

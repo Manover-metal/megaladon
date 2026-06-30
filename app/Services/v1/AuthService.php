@@ -15,13 +15,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Support\Str;
+use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Log;
+use Pusher\Pusher;
 
 class AuthService extends BaseService
 {
     private UserRepo $userRepo;
+    private $smsConfig;
 
     public function __construct() {
         $this->userRepo = new UserRepo();
+        $this->smsConfig = config('smsc');
     }
 
     public function login(array $data) : array
@@ -52,8 +57,6 @@ class AuthService extends BaseService
         if ($this->userRepo->getUserByPhone($data['phone'])) {
             return $this->errValidate('Пользователь с таким номером существует');
         }
-
-        $data['password'] = Hash::make($data['password']);
 
         $user = $this->userRepo->store($data);
         $code = (new PhoneConfirmationService())->sendCode($user, $data['phone']);
@@ -147,7 +150,32 @@ class AuthService extends BaseService
         }
 
         $newPassword = Str::random(10);
-        //TODO: Сделать отправку по смс
+        
+        if ($this->smsConfig['no_send_sms'] == false) {
+            $url = 'https://smsc.kz/sys/send.php'; // $this->smsConfig['url']
+            $params = [
+                'login' => $this->smsConfig['login'],
+                'psw' => $this->smsConfig['password'],
+                'phones' => substr($user->phone, 1, 11),
+                'mes' => 'Ваш новый пароль: ' . $newPassword,
+                'sender' => 'Manover',
+                'translit' => 0,
+                'time' => 0,
+                'fmt' => 3,
+            ];
+    
+            $client = new Client();
+            $response = $client->request('POST', $url, [
+                'form_params' => $params
+            ]);
+    
+            $jsonResponse = json_decode($response->getBody()->getContents(), true);
+            Log::info($jsonResponse);
+            if (isset($jsonResponse['error'])) {
+                return $this->errService('Не удалось отправить смс код');
+            }
+        }
+
         $this->userRepo->update($user->id, ['password' => Hash::make($newPassword)]);
 
         return $this->ok('Смс с паролем было высланно на указанный номер');
@@ -161,5 +189,27 @@ class AuthService extends BaseService
         }
         $user->tokens()->delete();
         return $this->ok();
+    }
+
+    public function pusherLogin(array $data)
+    {
+        $user = auth('api')->user();
+
+        $userData = json_encode([
+            'user_id' => auth('api')->user()->id,
+            'user_info' => (new UserPresenter($user))->short(),
+        ]);
+
+        $pusher = new Pusher(
+            config('broadcasting.connections.pusher.key'),
+            config('broadcasting.connections.pusher.secret'),
+            config('broadcasting.connections.pusher.app_id')
+        );
+        $auth = $pusher->authorizeChannel($data['channel_name'], $data['socket_id'], $userData);
+
+        return [
+                'auth' => json_decode($auth)->auth,
+                'channel_data' => $userData,
+            ];
     }
 }

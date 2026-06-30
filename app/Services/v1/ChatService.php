@@ -2,12 +2,14 @@
 
 namespace App\Services\v1;
 
+use App\Events\NewMessageEvent;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\User;
 use App\Presenters\v1\ChatPresenter;
 use App\Repositories\ChatRepo;
 use App\Services\BaseService;
+use Illuminate\Support\Facades\Storage;
 
 class ChatService extends BaseService
 {
@@ -40,7 +42,15 @@ class ChatService extends BaseService
     public function sendMessage(User $user, array $data)
     {
         $data['user_id'] = $user->id;
-        return $this->result(['message' => $this->chatRepo->storeChatMessage($data)]);
+
+        if (isset($data['file'])) {
+            $data['file_url'] = Storage::url($data['file']->store('public/chat'));
+        }
+
+        $message = $this->chatRepo->storeChatMessage($data);
+        $message = ChatMessage::find($message->id);
+        broadcast(new NewMessageEvent($message, [$user->id]));
+        return $this->result(['chat_message' => (new ChatPresenter($message))->messages()]);
     }
 
     public function editMessage(int $message_id, User $user, array $data)
