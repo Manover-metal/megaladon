@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class InvoiceRequest extends FormRequest
 {
@@ -24,8 +26,16 @@ class InvoiceRequest extends FormRequest
      */
     public function rules()
     {
+        // Админка правит только статус и срок: так вручную включают подписку,
+        // пока в приложении нет онлайн-оплаты.
         return [
-            // 'name' => 'required|min:5|max:255'
+            'status' => ['required', Rule::in([
+                Invoice::STATUS_CREATED,
+                Invoice::STATUS_PAID,
+                Invoice::STATUS_CANCELED,
+                Invoice::STATUS_EXPIRED,
+            ])],
+            'expired_at' => ['nullable', 'date'],
         ];
     }
 

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\InvoiceRequest;
+use App\Models\Invoice;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Carbon\Carbon;
 
 /**
  * Class InvoiceCrudController
@@ -15,6 +17,7 @@ class InvoiceCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation { update as traitUpdate; }
 
     /**
      * Configure the CrudPanel object. Apply settings to all operations.
@@ -93,9 +96,68 @@ class InvoiceCrudController extends CrudController
      * @see https://backpackforlaravel.com/docs/crud-operation-update
      * @return void
      */
+    // Онлайн-оплаты в приложении нет: «купить подписку» создаёт инвойс со
+    // статусом CREATED, и подписку включают здесь — ставят «Оплачено».
+    // Срок можно не заполнять: посчитается от тарифа, см. update().
     protected function setupUpdateOperation()
     {
         $this->setupCreateOperation();
+
+        CRUD::addField([
+            'name' => 'status',
+            'label' => 'Статус',
+            'type' => 'select_from_array',
+            'options' => [
+                Invoice::STATUS_CREATED => 'Создано',
+                Invoice::STATUS_PAID => 'Оплачено',
+                Invoice::STATUS_CANCELED => 'Отменено',
+                Invoice::STATUS_EXPIRED => 'Истекло',
+            ],
+            'allows_null' => false,
+        ]);
+        CRUD::addField([
+            'name' => 'expired_at',
+            'label' => 'Истекает',
+            'type' => 'date',
+            'hint' => 'При отметке «Оплачено» можно оставить пустым — срок посчитается от тарифа: от сегодня или от конца текущей подписки.',
+        ]);
+    }
+
+    /**
+     * Отметили «Оплачено», а срок не указали — считаем его так же, как
+     * InvoiceService::paid(): от конца другой действующей подписки того же
+     * владельца, иначе от сегодня, плюс срок тарифа в месяцах.
+     */
+    public function update()
+    {
+        $request = $this->crud->getRequest();
+
+        if ($request->input('status') === Invoice::STATUS_PAID && !$request->filled('expired_at')) {
+            $invoice = Invoice::with('subscription', 'invoiceable')
+                ->find($this->crud->getCurrentEntryId());
+
+            if ($invoice && $invoice->subscription) {
+                $request->merge(['expired_at' => $this->paidUntil($invoice)->toDateString()]);
+            }
+        }
+
+        return $this->traitUpdate();
+    }
+
+    private function paidUntil(Invoice $invoice): Carbon
+    {
+        $current = $invoice->invoiceable
+            ? $invoice->invoiceable->invoices()
+                ->where('id', '!=', $invoice->id)
+                ->where('status', Invoice::STATUS_PAID)
+                ->whereDate('expired_at', '>', Carbon::now())
+                ->orderBy('expired_at', 'desc')
+                ->first()
+            : null;
+
+        $from = $current ? Carbon::parse($current->expired_at) : Carbon::now();
+
+        return $from->addMonths($invoice->subscription->validity);
     }
 
     protected function autoSetupShowOperation()
