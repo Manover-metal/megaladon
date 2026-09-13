@@ -37,4 +37,9 @@ class ExecutorController extends ApiController
     {
         return $this->result($this->executorService->myRatings());
     }
+
+    public function info(int $id)
+    {
+        return $this->result($this->executorService->info($id));
+    }
 }

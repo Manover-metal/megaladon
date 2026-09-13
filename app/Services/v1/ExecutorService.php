@@ -112,6 +112,22 @@ class ExecutorService extends BaseService
         return $this->ok(__('executor.added_to_favorites'));
     }
 
+    // Карточка исполнителя по id исполнителя. Приложение открывало страницу
+    // исполнителя через GET /user/{id}, подставляя туда id исполнителя, —
+    // находился другой пользователь, у которого исполнителя нет, и экран
+    // падал (или показывал чужого исполнителя, если id совпадали).
+    public function info(int $id)
+    {
+        $executor = Executor::with('user', 'services')->find($id);
+        if (is_null($executor)) {
+            return $this->errNotFound(__('executor.not_found'));
+        }
+
+        return $this->result([
+            'executor' => (new ExecutorPresenter($executor))->edited(),
+        ]);
+    }
+
     public function checkExecutor(User $user)
     {
         $executor = $user->executor()->first();
