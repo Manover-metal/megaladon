@@ -10,7 +10,7 @@ class Order extends Model
 {
     use HasFactory, CrudTrait;
 
-    protected $fillable = ['title', 'description', 'price_recommended', 'price_max', 'execution_days', 'category_id', 'status', 'user_id', 'city_id', 'executor_id'];
+    protected $fillable = ['title', 'description', 'budget', 'execution_days', 'category_id', 'status', 'user_id', 'city_id', 'executor_id'];
 
     const STATUS_MODERATE = 1;
     const STATUS_ACTIVE = 2;

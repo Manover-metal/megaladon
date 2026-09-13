@@ -77,8 +77,7 @@ class OrderCrudController extends CrudController
 
         CRUD::field('title')->label('Заголовок');
         CRUD::field('description')->label('Описание');
-        CRUD::field('price_recommended')->label('Желаемая цена');
-        CRUD::field('price_max')->label('Максимальная цена');
+        CRUD::field('budget')->label('Бюджет');
         CRUD::addField([
             'label'     => 'Категория', // Table column heading
             'type'      => 'select',
@@ -142,8 +141,7 @@ class OrderCrudController extends CrudController
         CRUD::column('id');
         CRUD::column('title')->label('заголовок');
         CRUD::column('description')->label('Описание');
-        CRUD::column('price_recommended')->label('Желаемая цена');
-        CRUD::column('price_max')->label('Максимальная цена');
+        CRUD::column('budget')->label('Бюджет');
         CRUD::column('category.title')->label('Категория');
         CRUD::addColumn([
             'name'  => 'status',
