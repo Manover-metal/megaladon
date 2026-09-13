@@ -187,10 +187,12 @@ class OrderService extends BaseService
 
         $user = $this->apiAuthUser();
         $isResponded = false;
+        $myOfferId = null;
         if (!is_null($user)) {
             $offer = OrderOffer::where('user_id', $user->id)->where('order_id', $id)->first();
             if ($offer) {
                 $isResponded = true;
+                $myOfferId = $offer->id;
             }
 
             // Карточку открыли — бейдж на ней гаснет. Отметку ставим только
@@ -205,6 +207,10 @@ class OrderService extends BaseService
         return $this->result([
             'order' => (new OrderPresenter($order))->detail(),
             'is_responded' => $isResponded,
+            // Свой отклик смотрящего: по нему приложение вместо «Предложить
+            // услуги» показывает «Посмотреть предложение». Второй отклик
+            // createOffer всё равно отклоняет (406 already_offered).
+            'my_offer_id' => $myOfferId,
         ]);
     }
 
@@ -240,13 +246,21 @@ class OrderService extends BaseService
             return $this->errFobidden(__('order.unauthorized'));
         }
 
-        if ($order->user_id != $user->id) {
+        $offerRepo = new OrderOfferRepo();
+        $offer = $offerRepo->info($offerId);
+
+        // Отклик должен относиться к этому заказу. Раньше проверки не было,
+        // и через адрес своего заказа открывался любой отклик по id.
+        if (is_null($offer) || $offer->order_id != $order->id) {
+            return $this->errNotFound(__('order.not_found'));
+        }
+
+        // Смотреть отклик может заказчик — и автор отклика, свой и только
+        // для чтения (кнопка «Посмотреть предложение» на карточке заказа).
+        if ($order->user_id != $user->id && $offer->user_id != $user->id) {
             return $this->error(403, __('order.offers_no_access'));
         }
 
-        $offerRepo = new OrderOfferRepo();
-        $offer = $offerRepo->info($offerId);
-        
         return $this->result([
             'offer' => (new OfferPresenter($offer))->info(),
         ]);
