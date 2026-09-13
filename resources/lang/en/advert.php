@@ -7,4 +7,6 @@ return [
     'saved'                => 'Advert saved',
     'deleted'              => 'Advert deleted',
     'auth_error'           => 'Authorization error',
+    'cannot_delete_foreign' => 'You cannot delete someone else\'s advert',
+    'service_forbidden'    => 'Only executors and stores can publish services',
 ];
