@@ -18,6 +18,15 @@ class OrderPresenter extends BasePresenter
             'title' => $this->title,
             'description' => $this->description,
             'count_offers' => $countOffers,
+            // Карточка в ленте показывает бюджет — до сих пор цены были
+            // только в detail(). Отдаём числом: форматирование разрядов —
+            // дело клиента, ему всё равно нужны свои разделители под язык.
+            'price_recommended' => is_null($this->price_recommended)
+                ? null
+                : (float) $this->price_recommended,
+            'price_max' => is_null($this->price_max)
+                ? null
+                : (float) $this->price_max,
             'city' => (new CityPresenter($this->city))->list(),
             'created_at' => date('d.m.Y', strtotime($this->created_at)),
             'status' => $this->getStatusName(),
@@ -55,8 +64,12 @@ class OrderPresenter extends BasePresenter
                 'id' => $this->category->id,
                 'title' => $this->category->title, 
             ] : null,
-            'price_max' => number_format($this->price_max, 2),
-            'price_recommended' => number_format($this->price_recommended, 2),
+            // Столбцы nullable: number_format(null) в PHP 8.1 — deprecation,
+            // да и «0.00» вместо пустоты клиенту не нужен.
+            'price_max' => is_null($this->price_max) ? null : (float) $this->price_max,
+            'price_recommended' => is_null($this->price_recommended)
+                ? null
+                : (float) $this->price_recommended,
             'execution_days' => $this->execution_days,
             'city' => (new CityPresenter($this->city))->list(),
             'user' => $this->user ? (new UserPresenter($this->user))->short() : null,
