@@ -79,7 +79,13 @@ class StoreService extends BaseService
     {
         $store = Store::find($id);
 
-        if (is_null($store) || is_null($store->activeInvoice())) {
+        // Скрываем магазин без подписки от всех, кроме владельца: он открывает
+        // отзывы своего магазина из профиля и должен видеть их и тогда, когда
+        // подписка кончилась. Раньше и ему приходило «магазин не найден».
+        $user = $this->apiAuthUser();
+        $isOwner = $store && $user && (int) $store->user_id === (int) $user->id;
+
+        if (is_null($store) || (!$isOwner && is_null($store->activeInvoice()))) {
             return $this->errNotFound(__('store.not_found'));
         }
 
