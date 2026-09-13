@@ -18,6 +18,15 @@ class Order extends Model
     const STATUS_COMPLETED = 4;
     const STATUS_ARCHIVE = 5;
 
+    // Статусы, которые показывают списки «моих» заказов в приложении
+    // (OrderIndexRequestParams.statuses): без модерации и архива. По ним же
+    // считаются бейджи — см. OrderViewRepo.
+    const LISTED_STATUSES = [
+        self::STATUS_ACTIVE,
+        self::STATUS_HAS_EXECUTOR,
+        self::STATUS_COMPLETED,
+    ];
+
     public function media()
     {
         return $this->morphMany(MediaFiles::class, 'mediable');

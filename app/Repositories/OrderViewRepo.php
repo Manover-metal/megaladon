@@ -25,7 +25,7 @@ class OrderViewRepo
     // или прибавились отклики.
     public function countMyWithUpdates(int $userId): int
     {
-        return $this->joinViews(Order::query()->where('orders.user_id', $userId), $userId)
+        return $this->joinViews($this->listed()->where('orders.user_id', $userId), $userId)
             ->where(function ($query) {
                 $query->whereColumn('order_views.seen_status', '!=', 'orders.status')
                     ->orWhereRaw(
@@ -43,9 +43,19 @@ class OrderViewRepo
     // смотрим только на статус.
     public function countRespondedWithUpdates(int $userId, int $executorId): int
     {
-        return $this->joinViews(Order::query()->where('orders.executor_id', $executorId), $userId)
+        return $this->joinViews($this->listed()->where('orders.executor_id', $executorId), $userId)
             ->whereColumn('order_views.seen_status', '!=', 'orders.status')
             ->count();
+    }
+
+    // Считаем только те заказы, что показывают списки «моих» — приложение
+    // запрашивает их со статусами Order::LISTED_STATUSES. Заказ, ушедший в
+    // архив (удалённый) или на модерацию, из списка пропадает, открыть его и
+    // снять отметку нельзя — а в счётчике он висел навсегда: точка на
+    // карточках гасла, число на вкладке оставалось.
+    private function listed()
+    {
+        return Order::query()->whereIn('orders.status', Order::LISTED_STATUSES);
     }
 
     private function joinViews($query, int $userId)
