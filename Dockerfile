@@ -1,5 +1,19 @@
 FROM php:8.0-fpm
 
+# php:8.0-fpm собран на Debian 11 (bullseye), а её поддержка закончилась:
+# на deb.debian.org индекс bullseye-security ещё ссылается на пакеты, но
+# сами .deb удалены — сборка падала на 404 (rsync, libpng-dev, libxml2).
+# Берём bullseye из archive.debian.org. security-репозитория там пока нет,
+# поэтому без него: обновлений безопасности для bullseye всё равно больше
+# не выходит. Valid-Until у архивных Release истёк — проверку отключаем.
+# Настоящее решение — перейти на поддерживаемую версию PHP.
+RUN printf '%s\n' \
+        'deb http://archive.debian.org/debian bullseye main' \
+        'deb http://archive.debian.org/debian bullseye-updates main' \
+        > /etc/apt/sources.list \
+    && rm -f /etc/apt/sources.list.d/* \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+
 RUN apt-get update && apt-get install -y \
     git \
     curl \
