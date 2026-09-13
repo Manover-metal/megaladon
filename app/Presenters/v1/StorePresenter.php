@@ -13,6 +13,19 @@ class StorePresenter extends BasePresenter
         return $this->list();
     }
 
+    // Свой магазин в профиле: вдобавок к карточке — окончание подписки
+    // (unix-время в секундах, null без активного инвойса), как у
+    // ExecutorPresenter::edited(). В list()/detail() поля нет: каталогу это
+    // стоило бы лишнего запроса на каждый магазин, а чужим дата ни к чему.
+    public function edited()
+    {
+        $invoice = $this->activeInvoice();
+
+        return array_merge($this->list(), [
+            'subscription_expired_at' => is_null($invoice) ? null : strtotime($invoice->expired_at),
+        ]);
+    }
+
     public function list()
     {
         return [

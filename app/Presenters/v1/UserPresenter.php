@@ -15,7 +15,7 @@ class UserPresenter extends BasePresenter
             'phone' => $this->phone,
             'city' => $this->city ? (new CityPresenter($this->city))->list() : null,
             'executor' => $this->executor ? (new ExecutorPresenter($this->executor))->edited() : null,
-            'store' => $this->store ? (new StorePresenter($this->store))->detail() : null,
+            'store' => $this->store ? (new StorePresenter($this->store))->edited() : null,
         ];
     }
 
