@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\OrderOfferRequest;
+use App\Models\OrderOffer;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 
@@ -64,6 +65,12 @@ class OrderOfferCrudController extends CrudController
             'model'     => "App\Models\City", // foreign key model
         ]);
         CRUD::column('price')->label('Цена');
+        CRUD::addColumn([
+            'name' => 'price_type',
+            'label' => 'Цена указана',
+            'type' => 'select_from_array',
+            'options' => OrderOffer::PRICE_TYPE_LABELS,
+        ]);
         CRUD::column('date')->label('Срок');
         CRUD::column('comment')->label('Комментарий');
         CRUD::column('expired_at')->label('Истекает');
@@ -110,6 +117,14 @@ class OrderOfferCrudController extends CrudController
             'model'     => "App\Models\City", // foreign key model
         ]);
         CRUD::field('price')->label('Цена');
+        CRUD::addField([
+            'name' => 'price_type',
+            'label' => 'Цена указана',
+            'type' => 'select_from_array',
+            'options' => OrderOffer::PRICE_TYPE_LABELS,
+            'default' => OrderOffer::PRICE_TYPE_TOTAL,
+            'allows_null' => false,
+        ]);
         CRUD::field('date')->label('Срок');
         CRUD::field('comment')->label('Комментарий');
         CRUD::field('expired_at')->label('Истекает');

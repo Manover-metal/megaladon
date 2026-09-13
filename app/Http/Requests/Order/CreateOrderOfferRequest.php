@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Order;
 
+use App\Models\OrderOffer;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CreateOrderOfferRequest extends FormRequest
 {
@@ -25,6 +27,8 @@ class CreateOrderOfferRequest extends FormRequest
     {
         return [
             'price' => 'required|string|max:255',
+            // Не прислали (старые версии приложения) — база подставит total.
+            'price_type' => ['nullable', Rule::in(OrderOffer::PRICE_TYPES)],
             'date' => 'required|string|max:255',
             'city_id' => 'required|integer|exists:cities,id',
             'comment' => 'nullable|string',
