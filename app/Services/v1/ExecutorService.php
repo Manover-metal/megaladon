@@ -98,6 +98,13 @@ class ExecutorService extends BaseService
             return $this->errFobidden(__('executor.auth_error'));
         }
 
+        // Добавляют из отклика на свой заказ. Раньше заказ не проверялся —
+        // в избранное можно было записать исполнителя «по» чужому заказу.
+        $order = \App\Models\Order::find($data['order_id']);
+        if (is_null($order) || $order->user_id != $user->id) {
+            return $this->error(403, __('order.offers_no_access'));
+        }
+
         $data['user_id'] = $user->id;
 
         (new FavoriteRepo())->store($data);

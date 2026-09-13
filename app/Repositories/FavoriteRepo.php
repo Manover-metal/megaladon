@@ -13,8 +13,14 @@ class FavoriteRepo
             ->get();
     }
 
+    // Один исполнитель — одна строка в «Моих исполнителях». Раньше каждое
+    // нажатие «В избранное» создавало новую запись, и исполнитель в списке
+    // повторялся. order_id — заказ, из которого добавили последним.
     public function store(array $data) : void
     {
-        Favorite::create($data);
+        Favorite::updateOrCreate(
+            ['user_id' => $data['user_id'], 'executor_id' => $data['executor_id']],
+            ['order_id' => $data['order_id']]
+        );
     }
 }
