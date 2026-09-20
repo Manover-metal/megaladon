@@ -73,8 +73,17 @@ class OrderRepo
             $query->whereHas('user', fn ($q) => $q->whereNull('users.deleted_at'));
         }
 
-        if (isset($params['executor_id'])) {
-            $query->where('executor_id', $params['executor_id']);
+        // Вкладка «как исполнитель»: назначенные мне плюс мои отклики без
+        // решения. Правило одно со счётчиком бейджа — Order::visibleToExecutor.
+        //
+        // Пару кладёт только OrderService::indexMyResponded; от клиента
+        // executor_id не принимается (в IndexOrderRequest его нет), поэтому
+        // прежней ветки с простым where по executor_id больше не осталось.
+        if (isset($params['executor_id'], $params['responded_by_user_id'])) {
+            $query->visibleToExecutor(
+                (int) $params['responded_by_user_id'],
+                (int) $params['executor_id']
+            );
         }
 
         if (isset($params['city_id'])) {

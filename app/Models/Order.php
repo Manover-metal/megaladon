@@ -27,6 +27,36 @@ class Order extends Model
         self::STATUS_COMPLETED,
     ];
 
+    // Заказы вкладки «как исполнитель»: где пользователь назначен, и где он
+    // откликнулся, пока исполнитель не выбран. Как только заказчик выбрал
+    // другого, заказ из набора уходит.
+    //
+    // Правило живёт здесь, а не в репозиториях, потому что им пользуются и
+    // список (OrderRepo::index), и счётчик бейджа
+    // (OrderViewRepo::countRespondedWithUpdates). Две копии условия
+    // разъедутся, и число на вкладке перестанет сходиться с её содержимым.
+    //
+    // «Исполнитель не выбран» — это null ИЛИ 0: колонка nullable, но
+    // OrderService::create пишет 0, и в базе встречаются оба значения.
+    public function scopeVisibleToExecutor($query, int $userId, int $executorId)
+    {
+        return $query->where(function ($q) use ($userId, $executorId) {
+            $q->where('orders.executor_id', $executorId)
+                ->orWhere(function ($q2) use ($userId) {
+                    $q2->where(function ($q3) {
+                            $q3->whereNull('orders.executor_id')
+                                ->orWhere('orders.executor_id', 0);
+                        })
+                        ->whereExists(function ($sub) use ($userId) {
+                            $sub->selectRaw(1)
+                                ->from('order_offers')
+                                ->whereColumn('order_offers.order_id', 'orders.id')
+                                ->where('order_offers.user_id', $userId);
+                        });
+                });
+        });
+    }
+
     public function media()
     {
         return $this->morphMany(MediaFiles::class, 'mediable');

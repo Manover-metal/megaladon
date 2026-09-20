@@ -33,6 +33,15 @@ class OrderPresenter extends BasePresenter
             'status_code' => $this->status,
             'execution_days' => $this->execution_days,
             'status_changed' => !is_null($view) && (int) $view->seen_status !== (int) $this->status,
+            // Заказчик поправил заказ. Последнее условие важно: при
+            // назначении исполнителя updated_at меняется вместе со статусом,
+            // и без него карточка показала бы сразу две метки об одном
+            // событии. В detail() поля нет — info() грузит заказ без связи
+            // views, и seenState() там всегда null.
+            'content_changed' => !is_null($view)
+                && !is_null($view->seen_updated_at)
+                && strtotime($view->seen_updated_at) < strtotime($this->updated_at)
+                && (int) $view->seen_status === (int) $this->status,
             'new_offers_count' => is_null($view)
                 ? 0
                 : max(0, $countOffers - (int) $view->seen_offers_count),

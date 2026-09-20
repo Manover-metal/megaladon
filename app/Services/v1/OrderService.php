@@ -75,6 +75,13 @@ class OrderService extends BaseService
         $offerRepo->store($data);
 
         $order = Order::find($orderId);
+
+        // С этого момента заказ показывается исполнителю во вкладке «как
+        // исполнитель», поэтому заводим строку просмотра. Без неё
+        // countRespondedWithUpdates (INNER JOIN по order_views) заказ не
+        // увидит, и назначение не зажжёт бейдж.
+        $this->orderViewRepo->markSeen($user->id, $order);
+
         event(new OfferCreatedEvent($order));
 
         return $this->ok(__('order.offer_sent'));
@@ -151,6 +158,9 @@ class OrderService extends BaseService
             return $this->errNotFound(__('order.executor_not_found'));
         }
         $params['executor_id'] = $executor->id;
+        // Пара с executor_id включает набор вкладки целиком: назначенные мне
+        // и отклики, по которым заказчик ещё не решил.
+        $params['responded_by_user_id'] = $user->id;
         $params['viewer_id'] = $user->id;
         $orders = $this->orderRepo->index($params);
         return $this->resultCollections($orders, OrderPresenter::class, 'list');
@@ -199,7 +209,9 @@ class OrderService extends BaseService
             // тем, кому этот заказ вообще показывается в «моих»: заказчику и
             // назначенному исполнителю. Случайный зритель из общей ленты
             // строк в order_views не плодит.
-            if ($order->user_id == $user->id || $this->isAssignedExecutor($order, $user)) {
+            if ($order->user_id == $user->id
+                || $this->isAssignedExecutor($order, $user)
+                || $isResponded) {
                 $this->orderViewRepo->markSeen($user->id, $order);
             }
         }

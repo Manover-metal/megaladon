@@ -17,6 +17,7 @@ class OrderViewRepo
             [
                 'seen_status' => $order->status,
                 'seen_offers_count' => $order->offers()->count(),
+                'seen_updated_at' => $order->updated_at,
             ]
         );
     }
@@ -37,14 +38,32 @@ class OrderViewRepo
             ->count();
     }
 
-    // Заказы, где пользователь назначен исполнителем (именно их показывает
-    // вкладка «мои отклики» — OrderService::indexMyResponded фильтрует по
-    // executor_id). Чужие отклики исполнителя не касаются, поэтому здесь
-    // смотрим только на статус.
+    // Заказы вкладки «как исполнитель»: назначенные мне и мои отклики, по
+    // которым решения ещё нет. Набор берём из Order::scopeVisibleToExecutor —
+    // тем же scope пользуется список (OrderRepo::index), иначе число на
+    // вкладке разойдётся с её содержимым.
+    //
+    // Назначение отдельным условием не проверяем: при нём заказ переходит в
+    // STATUS_HAS_EXECUTOR, и расхождение seen_status его уже ловит.
     public function countRespondedWithUpdates(int $userId, int $executorId): int
     {
-        return $this->joinViews($this->listed()->where('orders.executor_id', $executorId), $userId)
-            ->whereColumn('order_views.seen_status', '!=', 'orders.status')
+        $query = $this->listed()->visibleToExecutor($userId, $executorId);
+
+        return $this->joinViews($query, $userId)
+            ->where(function ($q) {
+                $q->whereColumn('order_views.seen_status', '!=', 'orders.status')
+                    // Заказчик поправил заказ. Строки со старых релизов
+                    // держат здесь null — их не считаем, иначе бейджи
+                    // вспыхнут разом при первой же правке.
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotNull('order_views.seen_updated_at')
+                            ->whereColumn(
+                                'order_views.seen_updated_at',
+                                '<',
+                                'orders.updated_at'
+                            );
+                    });
+            })
             ->count();
     }
 
