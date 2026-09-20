@@ -38,7 +38,7 @@ class AdvertService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Unathorized');
+            return $this->errUnauthenticated('Unathorized');
         }
 
         if ($data['type'] == Advert::TYPE_SERVICE) {

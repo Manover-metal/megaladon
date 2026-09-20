@@ -142,7 +142,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, __('user.unauthorized'));
+            return $this->errUnauthenticated(__('user.unauthorized'));
         }
         $data = [
             'device_token' => $data['token'],
@@ -157,7 +157,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, __('user.unauthorized'));
+            return $this->errUnauthenticated(__('user.unauthorized'));
         }
         $data = [
             'device_token' => '',
@@ -172,7 +172,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, __('user.unauthorized'));
+            return $this->errUnauthenticated(__('user.unauthorized'));
         }
 
         return $this->result([
@@ -185,7 +185,7 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, __('user.unauthorized'));
+            return $this->errUnauthenticated(__('user.unauthorized'));
         }
 
         // push_notifications — это сам флаг «пуши вкл/выкл». filter_var, т.к.

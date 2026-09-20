@@ -123,7 +123,7 @@ class OrderService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('order.auth_error'));
+            return $this->errUnauthenticated(__('order.auth_error'));
         }
         $params['user_id'] = $user->id;
         $orders = $this->orderRepo->index($params);
@@ -192,7 +192,7 @@ class OrderService extends BaseService
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('order.unauthorized'));
+            return $this->errUnauthenticated(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
@@ -216,7 +216,7 @@ class OrderService extends BaseService
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('order.unauthorized'));
+            return $this->errUnauthenticated(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
@@ -237,7 +237,7 @@ class OrderService extends BaseService
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('order.unauthorized'));
+            return $this->errUnauthenticated(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
@@ -262,7 +262,7 @@ class OrderService extends BaseService
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('order.unauthorized'));
+            return $this->errUnauthenticated(__('order.unauthorized'));
         }
         
         $offer = OrderOffer::find($offerId);
@@ -304,7 +304,7 @@ class OrderService extends BaseService
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('order.unauthorized'));
+            return $this->errUnauthenticated(__('order.unauthorized'));
         }
 
         if ($order->user_id != $user->id) {
