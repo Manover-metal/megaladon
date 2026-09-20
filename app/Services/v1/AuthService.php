@@ -71,7 +71,7 @@ class AuthService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, 'Auth error');
+            return $this->errUnauthenticated('Auth error');
         }
 
         $executorRepo = new ExecutorRepo();
@@ -97,7 +97,7 @@ class AuthService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->error(403, 'Unauthorized');
+            return $this->errUnauthenticated('Unauthorized');
         }
 
         $storeRepo = new StoreRepo();
@@ -196,7 +196,7 @@ class AuthService extends BaseService
     {
         $user = auth('api')->user();
         if (is_null($user)) {
-            return $this->errFobidden('Unauthorized');
+            return $this->errUnauthenticated('Unauthorized');
         }
         $user->tokens()->delete();
         return $this->ok();

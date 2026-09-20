@@ -19,6 +19,15 @@ class BaseService
         return $this->error(403, $message);
     }
 
+    // 401 Unauthorized — «токена нет / токен недействителен». Отделено от 403:
+    // 403 означает «ты авторизован, но это действие тебе запрещено» (чужой
+    // заказ, не участник чата). Клиент разлогинивается только на 401, иначе
+    // любой бизнес-запрет выбрасывал пользователя из аккаунта.
+    protected function errUnauthenticated($message): array
+    {
+        return $this->error(401, $message);
+    }
+
     // 402 Payment Required — для случаев «нужна подписка/оплата».
     protected function errPaymentRequired($message): array
     {

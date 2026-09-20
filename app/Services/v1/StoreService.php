@@ -98,7 +98,7 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('store.unauthorized'));
+            return $this->errUnauthenticated(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
@@ -122,7 +122,7 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('store.unauthorized'));
+            return $this->errUnauthenticated(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
@@ -148,7 +148,7 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('store.unauthorized'));
+            return $this->errUnauthenticated(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
@@ -170,7 +170,7 @@ class StoreService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('store.unauthorized'));
+            return $this->errUnauthenticated(__('store.unauthorized'));
         }
 
         $store = $this->storeRepo->getByUserId($user->id);
@@ -197,7 +197,7 @@ class StoreService extends BaseService
 
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden('Требуется авторизация');
+            return $this->errUnauthenticated('Требуется авторизация');
         }
 
         if ($store->user_id == $user->id) {

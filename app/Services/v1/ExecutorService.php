@@ -66,7 +66,7 @@ class ExecutorService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('executor.auth_error'));
+            return $this->errUnauthenticated(__('executor.auth_error'));
         }
 
         $favorites = (new FavoriteRepo())->indexMy($user->id);
@@ -78,7 +78,7 @@ class ExecutorService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('executor.auth_error'));
+            return $this->errUnauthenticated(__('executor.auth_error'));
         }
 
         $executor = $this->executorRepo->findByUserId($user->id);
@@ -95,7 +95,7 @@ class ExecutorService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (is_null($user)) {
-            return $this->errFobidden(__('executor.auth_error'));
+            return $this->errUnauthenticated(__('executor.auth_error'));
         }
 
         // Добавляют из отклика на свой заказ. Раньше заказ не проверялся —

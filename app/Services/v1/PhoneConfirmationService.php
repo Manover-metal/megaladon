@@ -5,8 +5,6 @@ namespace App\Services\v1;
 use App\Models\User;
 use App\Repositories\PhoneConfirmationRepo;
 use App\Services\BaseService;
-use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Log;
 
 class PhoneConfirmationService extends BaseService
 {
@@ -18,16 +16,34 @@ class PhoneConfirmationService extends BaseService
         $this->smsConfig = config('smsc');
     }
 
+    /**
+     * Генерирует код, сохраняет его и пробует отправить SMS.
+     *
+     * @return string|null Код возвращается наружу только когда SMS реально не
+     *                     ушла (отладочный режим или сбой шлюза) — иначе клиент
+     *                     получил бы код в ответе API в обход подтверждения.
+     */
     public function sendCode(User $user, $phone)
     {
-        // TODO: вернуть случайную генерацию после подключения SMS-провайдера
-        $code = 101010;
+        $code = $this->generateCode();
         $this->pcRepo->store($user, $phone, $code);
 
-        // TODO: Подключить SMS-провайдер (Mobizon / SMSC.ru / Twilio)
-        // Пример для Mobizon: https://mobizon.kz/help/api-docs/sms-api
-        // $this->sendSms($phone, "Ваш код подтверждения: {$code}");
+        $sent = (new SmscService())->send($phone, __('sms.confirmation_code', ['code' => $code]));
 
-        return $code;
+        return $sent ? null : $code;
+    }
+
+    private function generateCode(): string
+    {
+        if ($this->smsConfig['no_send_sms']) {
+            return (string) $this->smsConfig['debug_code'];
+        }
+
+        $length = min(max((int) $this->smsConfig['code_length'], 4), 8);
+
+        // Нижняя граница — с единицы в старшем разряде: код всегда ровно $length
+        // цифр, без ведущих нулей (иначе PHP сравнил бы '012345' и '12345' как
+        // равные числовые строки при проверке).
+        return (string) random_int(10 ** ($length - 1), (10 ** $length) - 1);
     }
 }
