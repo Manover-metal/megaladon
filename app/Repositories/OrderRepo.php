@@ -79,10 +79,12 @@ class OrderRepo
         // Пару кладёт только OrderService::indexMyResponded; от клиента
         // executor_id не принимается (в IndexOrderRequest его нет), поэтому
         // прежней ветки с простым where по executor_id больше не осталось.
-        if (isset($params['executor_id'], $params['responded_by_user_id'])) {
+        // executor_id необязателен: откликаться может любой пользователь, и
+        // без профиля исполнителя вкладка показывает только его отклики.
+        if (isset($params['responded_by_user_id'])) {
             $query->visibleToExecutor(
                 (int) $params['responded_by_user_id'],
-                (int) $params['executor_id']
+                isset($params['executor_id']) ? (int) $params['executor_id'] : null
             );
         }
 

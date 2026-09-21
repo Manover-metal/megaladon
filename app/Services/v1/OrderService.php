@@ -155,11 +155,14 @@ class OrderService extends BaseService
             return $this->errFobidden(__('order.auth_error'));
         }
 
+        // Профиль исполнителя здесь не обязателен: createOffer() его не
+        // требует, поэтому откликнуться может любой пользователь. Раньше на
+        // отсутствие профиля отвечали 404 «Executor not found», и свои же
+        // отклики посмотреть было нельзя.
         $executor = $user->executor()->first();
-        if (is_null($executor)) {
-            return $this->errNotFound(__('order.executor_not_found'));
+        if (!is_null($executor)) {
+            $params['executor_id'] = $executor->id;
         }
-        $params['executor_id'] = $executor->id;
         // Пара с executor_id включает набор вкладки целиком: назначенные мне
         // и отклики, по которым заказчик ещё не решил.
         $params['responded_by_user_id'] = $user->id;
@@ -183,9 +186,10 @@ class OrderService extends BaseService
         return $this->result([
             'badges' => [
                 'my' => $this->orderViewRepo->countMyWithUpdates($user->id),
-                'responded' => is_null($executor)
-                    ? 0
-                    : $this->orderViewRepo->countRespondedWithUpdates($user->id, $executor->id),
+                // Правило то же, что у списка вкладки (Order::visibleToExecutor):
+                // без профиля исполнителя считаем отклики пользователя.
+                'responded' => $this->orderViewRepo
+                    ->countRespondedWithUpdates($user->id, $executor?->id),
             ],
         ]);
     }

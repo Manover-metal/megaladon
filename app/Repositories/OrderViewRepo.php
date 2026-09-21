@@ -45,7 +45,7 @@ class OrderViewRepo
     //
     // Назначение отдельным условием не проверяем: при нём заказ переходит в
     // STATUS_HAS_EXECUTOR, и расхождение seen_status его уже ловит.
-    public function countRespondedWithUpdates(int $userId, int $executorId): int
+    public function countRespondedWithUpdates(int $userId, ?int $executorId): int
     {
         $query = $this->listed()->visibleToExecutor($userId, $executorId);
 

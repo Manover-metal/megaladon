@@ -38,10 +38,19 @@ class Order extends Model
     //
     // «Исполнитель не выбран» — это null ИЛИ 0: колонка nullable, но
     // OrderService::create пишет 0, и в базе встречаются оба значения.
-    public function scopeVisibleToExecutor($query, int $userId, int $executorId)
+    //
+    // $executorId = null — у пользователя нет профиля исполнителя. Назначить
+    // его таким заказом невозможно, поэтому первая ветка просто отпадает, и
+    // остаются только отклики. Ноль вместо null сюда передавать нельзя:
+    // executor_id = 0 означает «исполнитель не выбран», и условие поймало бы
+    // все свободные заказы подряд.
+    public function scopeVisibleToExecutor($query, int $userId, ?int $executorId)
     {
         return $query->where(function ($q) use ($userId, $executorId) {
-            $q->where('orders.executor_id', $executorId)
+            $q->when(
+                $executorId !== null,
+                fn ($inner) => $inner->where('orders.executor_id', $executorId)
+            )
                 ->orWhere(function ($q2) use ($userId) {
                     $q2->where(function ($q3) {
                             $q3->whereNull('orders.executor_id')
