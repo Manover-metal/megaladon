@@ -5,6 +5,8 @@ namespace App\Services\v1;
 use App\Events\ExecutorRatedEvent;
 use App\Events\OfferAcceptedEvent;
 use App\Events\OfferCreatedEvent;
+use App\Events\OrderArchivedEvent;
+use App\Events\OrderCompletedEvent;
 use App\Http\Requests\Order\CommentOrderRequest;
 use App\Models\Chat;
 use App\Models\Executor;
@@ -296,6 +298,9 @@ class OrderService extends BaseService
 
         $this->orderRepo->update($order, ['status' => Order::STATUS_ARCHIVE]);
 
+        // См. комментарий в complete(): mass update не поднимает события модели.
+        event(new OrderArchivedEvent($order));
+
         return $this->ok();
     }
 
@@ -320,6 +325,11 @@ class OrderService extends BaseService
         }
 
         $this->orderRepo->update($order, ['status' => Order::STATUS_COMPLETED]);
+
+        // Событие поднимаем здесь, а не в OrderObserver: OrderRepo::update()
+        // меняет статус через query builder (Order::where(...)->update()), а
+        // он модельные события не вызывает.
+        event(new OrderCompletedEvent($order));
 
         return $this->ok();
     }

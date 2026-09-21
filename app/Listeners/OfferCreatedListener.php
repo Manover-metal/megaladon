@@ -17,7 +17,7 @@ class OfferCreatedListener
             $event->order->user,
             'Новое предложение на заказ №' . $event->order->id,
             'Кто-то откликнулся на ваш заказ',
-            ['order_id' => $event->order->id],
+            ['type' => 'offer_created', 'order_id' => $event->order->id],
         );
     }
 }

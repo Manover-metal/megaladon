@@ -29,7 +29,7 @@ class NewMessageListener
             $users,
             'Новое сообщение',
             $body,
-            ['chat_id' => $event->message->chat_id],
+            ['type' => 'new_message', 'chat_id' => $event->message->chat_id],
         );
     }
 }

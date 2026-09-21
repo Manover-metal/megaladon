@@ -7,12 +7,16 @@ use App\Events\NewMessageEvent;
 use App\Events\OfferAcceptedEvent;
 use App\Events\OfferCreatedEvent;
 use App\Events\OrderActivatedEvent;
+use App\Events\OrderArchivedEvent;
+use App\Events\OrderCompletedEvent;
 use App\Events\StoreRatedEvent;
 use App\Listeners\ExecutorRatedListener;
 use App\Listeners\NewMessageListener;
 use App\Listeners\OfferAcceptedListener;
 use App\Listeners\OfferCreatedListener;
 use App\Listeners\OrderActivatedListener;
+use App\Listeners\OrderArchivedListener;
+use App\Listeners\OrderCompletedListener;
 use App\Listeners\StoreRatedListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -53,6 +57,14 @@ class EventServiceProvider extends ServiceProvider
 
         OrderActivatedEvent::class => [
             OrderActivatedListener::class,
+        ],
+
+        OrderCompletedEvent::class => [
+            OrderCompletedListener::class,
+        ],
+
+        OrderArchivedEvent::class => [
+            OrderArchivedListener::class,
         ],
     ];
 

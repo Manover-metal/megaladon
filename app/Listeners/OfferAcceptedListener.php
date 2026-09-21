@@ -23,7 +23,7 @@ class OfferAcceptedListener
             $user,
             'Заказ №' . $event->order_id,
             'Ваше предложение принято!',
-            ['order_id' => $event->order_id],
+            ['type' => 'offer_accepted', 'order_id' => $event->order_id],
         );
     }
 }
