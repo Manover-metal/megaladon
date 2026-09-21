@@ -135,6 +135,9 @@ class UserService extends BaseService
         }
 
         $this->userRepo->update($user->id, ['phone' => $data['phone']]);
+        // Код одноразовый — иначе старым кодом можно привязать номер повторно.
+        $pcRepo->deleteByPhone($data['phone']);
+
         return $this->ok(__('user.phone_changed'));
     }
 

@@ -16,11 +16,6 @@ class PhoneConfirmationRepo
         ]);
     }
 
-    public function getByPhone($phone)
-    {
-        return PhoneConfirmation::where('phone', $phone)->first();
-    }
-
     public function getLatestByPhone($phone)
     {
         return PhoneConfirmation::where('phone', $phone)
@@ -32,6 +27,7 @@ class PhoneConfirmationRepo
     {
         return PhoneConfirmation::where('user_id', $userId)
             ->where('phone', $phone)
+            ->latest('id')
             ->first();
     }
 

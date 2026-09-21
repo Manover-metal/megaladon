@@ -122,7 +122,12 @@ class AuthService extends BaseService
 
     public function confirmCode(array $data) : array
     {
-        $code = (new PhoneConfirmationRepo())->getByPhone($data['phone']);
+        // Именно последний выданный код. Раньше здесь был getByPhone() —
+        // ->first() без сортировки, то есть строка с наименьшим id: на номер
+        // проверялся самый первый код за всю его историю. Коды не удалялись,
+        // и номер, получивший 101010 в период NO_SEND_SMS=true, навсегда
+        // подтверждался этим кодом.
+        $code = (new PhoneConfirmationRepo())->getLatestByPhone($data['phone']);
 
         if (!$code) {
             return $this->errNotFound(__('account.phone_invalid'));
@@ -133,6 +138,8 @@ class AuthService extends BaseService
         }
 
         $this->userRepo->confirmPhone($data['phone']);
+        // Код одноразовый — гасим все выданные на номер, как в resetPassword().
+        (new PhoneConfirmationRepo())->deleteByPhone($data['phone']);
         $user = $this->userRepo->getUserByPhone($data['phone']);
         $token = $user->createToken('api')->plainTextToken;
 
