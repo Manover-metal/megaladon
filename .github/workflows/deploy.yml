@@ -12,6 +12,7 @@ name: Deploy backend
 #   SSH_PASSWORD       — пароль пользователя SSH
 #   SSH_PORT           — порт SSH (необязательно, по умолчанию 22)
 #   PROJECT_PATH       — путь к каталогу проекта на сервере (где docker-compose.yml)
+#   FIREBASE_SERVICE_ACCOUNT_B64 — service-account.json Firebase в base64 (одной строкой)
 #
 # На сервере должны быть: Docker + Docker Compose v2 и рабочий .env в PROJECT_PATH.
 
@@ -66,7 +67,10 @@ jobs:
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          FIREBASE_SA_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
         with:
+          envs: FIREBASE_SA_B64
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
@@ -93,6 +97,27 @@ jobs:
             echo "==> Тянем образ и поднимаем контейнеры (ждём healthcheck БД)"
             docker compose pull
             docker compose up -d --no-build --remove-orphans --wait
+
+            # Ключ сервис-аккаунта Firebase лежит под storage/app/, где
+            # .gitignore игнорирует всё, поэтому в репозиторий и в образ он не
+            # попадает: entrypoint копировать нечего, каталога в томе не
+            # возникает, и FCM падает с "Invalid service account". Кладём из
+            # секрета на каждом деплое — том app_storage переживает
+            # пересоздание контейнера, но не пересоздание самого тома.
+            echo "==> Кладём ключ Firebase в storage"
+            if [ -z "${FIREBASE_SA_B64:-}" ]; then
+              echo "Секрет FIREBASE_SERVICE_ACCOUNT_B64 не задан — пуши не заработают" >&2
+              exit 1
+            fi
+            docker compose exec -T app sh -c 'mkdir -p /var/www/storage/app/firebase'
+            echo "$FIREBASE_SA_B64" | base64 -d \
+              | docker compose exec -T app sh -c 'cat > /var/www/storage/app/firebase/service-account.json'
+            docker compose exec -T app sh -c 'chown www-data:www-data /var/www/storage/app/firebase/service-account.json \
+              && chmod 600 /var/www/storage/app/firebase/service-account.json'
+            # Пустой файл означает, что секрет содержит не тот base64 — лучше
+            # уронить деплой здесь, чем молча остаться без пушей.
+            docker compose exec -T app sh -c 'test -s /var/www/storage/app/firebase/service-account.json' \
+              || { echo "ключ не записался" >&2; exit 1; }
 
             # default.conf смонтирован в контейнер файлом, а тег образа nginx
             # фиксированный — если поменялся только конфиг, compose разницы в
