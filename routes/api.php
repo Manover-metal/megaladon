@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\v1\{
     ProductCategoryController,
     StoreController,
     SubscriptionController,
+    StoreWebhookController,
     ServiceTypeController,
 };
 use Illuminate\Support\Facades\Route;
@@ -151,3 +152,6 @@ Route::group(['guard' => 'api'], function () {
         Route::delete('/delete-message/{id}', [ChatController::class, 'deleteMessage']);
     });
 });
+
+// Вебхуки магазинов: без авторизации пользователя, разбор — в контроллере.
+Route::post('/webhooks/apple', [StoreWebhookController::class, 'apple']);
