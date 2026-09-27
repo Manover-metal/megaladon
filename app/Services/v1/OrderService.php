@@ -330,6 +330,11 @@ class OrderService extends BaseService
 
         $this->orderRepo->update($order, ['status' => Order::STATUS_COMPLETED]);
 
+        // Статус сменил сам заказчик — бейджа ему за это не положено. Раньше
+        // это держалось только на том, что приложение перечитывает карточку;
+        // при сбое того запроса бейдж загорался на собственное действие.
+        $this->orderViewRepo->markSeen($user->id, $order->fresh());
+
         // Событие поднимаем здесь, а не в OrderObserver: OrderRepo::update()
         // меняет статус через query builder (Order::where(...)->update()), а
         // он модельные события не вызывает.
@@ -378,7 +383,10 @@ class OrderService extends BaseService
         // Заказ только что появился у исполнителя во вкладке «мои отклики».
         // Отмечаем текущее состояние, чтобы бейдж дал следующая смена статуса,
         // а не сам факт назначения.
-        $this->orderViewRepo->markSeen($offer->user_id, $order->fresh());
+        $fresh = $order->fresh();
+        $this->orderViewRepo->markSeen($offer->user_id, $fresh);
+        // И заказчику: статус он сменил сам (см. complete()).
+        $this->orderViewRepo->markSeen($user->id, $fresh);
 
         event(new OfferAcceptedEvent($offer->user_id, $orderId));
 

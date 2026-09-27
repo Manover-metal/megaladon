@@ -12,6 +12,11 @@ class OrderPresenter extends BasePresenter
         // переиспользуем и для выдачи, и для новых откликов.
         $countOffers = $this->countOffers();
         $view = $this->seenState();
+        // Метки у сторон разные, как и счётчики вкладок (OrderViewRepo):
+        // заказчику — новые отклики, исполнителю — правки заказчика. Без
+        // разделения исполнитель видел число чужих откликов, а заказчик —
+        // точку после собственной правки, и карточки расходились с вкладкой.
+        $isOwner = !is_null($view) && (int) $view->user_id === (int) $this->user_id;
 
         return [
             'id' => $this->id,
@@ -39,10 +44,11 @@ class OrderPresenter extends BasePresenter
             // событии. В detail() поля нет — info() грузит заказ без связи
             // views, и seenState() там всегда null.
             'content_changed' => !is_null($view)
+                && !$isOwner
                 && !is_null($view->seen_updated_at)
                 && strtotime($view->seen_updated_at) < strtotime($this->updated_at)
                 && (int) $view->seen_status === (int) $this->status,
-            'new_offers_count' => is_null($view)
+            'new_offers_count' => !$isOwner
                 ? 0
                 : max(0, $countOffers - (int) $view->seen_offers_count),
         ];
