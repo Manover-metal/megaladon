@@ -16,6 +16,7 @@
 <hr>
 <li class="nav-item"><a class="nav-link" href="{{ backpack_url('subscription') }}"><i class="nav-icon la la-dollar-sign"></i> Подписки</a></li>
 <li class="nav-item"><a class="nav-link" href="{{ backpack_url('invoice') }}"><i class="nav-icon la la-file-invoice-dollar"></i> Счета</a></li>
+<li class="nav-item"><a class="nav-link" href="{{ backpack_url('setting') }}"><i class="nav-icon la la-cog"></i> Настройки</a></li>
 <hr>
 <li class="nav-item"><a class="nav-link" href="{{ backpack_url('order-category') }}"><i class="nav-icon la la-bookmark"></i> Категории заказов</a></li>
 <li class="nav-item"><a class="nav-link" href="{{ backpack_url('order') }}"><i class="nav-icon la la-shopping-cart"></i> Заказы</a></li>

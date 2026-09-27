@@ -28,6 +28,8 @@ class SubscriptionRequest extends FormRequest
             'type' => ['required', 'in:executor,store'],
             'validity' => ['required', 'integer'],
             'price' => ['required', 'numeric'],
+            'apple_product_id' => ['nullable', 'string', 'max:255'],
+            'google_product_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 
