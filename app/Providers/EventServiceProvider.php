@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\ExecutorRatedEvent;
 use App\Events\NewMessageEvent;
 use App\Events\OfferAcceptedEvent;
+use App\Events\SubscriptionPaidEvent;
 use App\Events\OfferCreatedEvent;
 use App\Events\OrderActivatedEvent;
 use App\Events\OrderArchivedEvent;
@@ -13,6 +14,7 @@ use App\Events\StoreRatedEvent;
 use App\Listeners\ExecutorRatedListener;
 use App\Listeners\NewMessageListener;
 use App\Listeners\OfferAcceptedListener;
+use App\Listeners\SubscriptionPaidListener;
 use App\Listeners\OfferCreatedListener;
 use App\Listeners\OrderActivatedListener;
 use App\Listeners\OrderArchivedListener;
@@ -65,6 +67,10 @@ class EventServiceProvider extends ServiceProvider
 
         OrderArchivedEvent::class => [
             OrderArchivedListener::class,
+        ],
+
+        SubscriptionPaidEvent::class => [
+            SubscriptionPaidListener::class,
         ],
     ];
 
