@@ -155,3 +155,4 @@ Route::group(['guard' => 'api'], function () {
 
 // Вебхуки магазинов: без авторизации пользователя, разбор — в контроллере.
 Route::post('/webhooks/apple', [StoreWebhookController::class, 'apple']);
+Route::post('/webhooks/google/{secret}', [StoreWebhookController::class, 'google']);

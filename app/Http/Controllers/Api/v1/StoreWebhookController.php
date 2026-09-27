@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Services\Billing\GooglePlayClient;
 use App\Services\v1\StorePaymentService;
 use Carbon\Carbon;
 use Firebase\JWT\JWT;
@@ -16,6 +17,12 @@ use Illuminate\Support\Facades\Log;
  */
 class StoreWebhookController extends Controller
 {
+    // subscriptionNotification.notificationType
+    private const GOOGLE_RECOVERED = 1;
+    private const GOOGLE_RENEWED = 2;
+    private const GOOGLE_PURCHASED = 4;
+    private const GOOGLE_REVOKED = 12;
+
     public function __construct(private StorePaymentService $payments)
     {
     }
@@ -45,6 +52,54 @@ class StoreWebhookController extends Controller
             $this->payments->refunded((string) $transaction['transactionId']);
         } else {
             Log::info('Apple webhook skipped', ['type' => $type, 'subtype' => $notification['subtype'] ?? null]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Real-time developer notifications через Pub/Sub push. Номера заявки и
+     * срока в уведомлении нет — берём их из Google Play API; поддельное
+     * уведомление оплату, которой нет в Google, не создаст.
+     */
+    public function google(Request $request, string $secret, GooglePlayClient $google)
+    {
+        $expected = config('billing.google.webhook_secret');
+        if (!$expected || !hash_equals($expected, $secret)) {
+            abort(404);
+        }
+
+        $message = json_decode(base64_decode((string) $request->input('message.data')), true) ?: [];
+        $notification = $message['subscriptionNotification'] ?? null;
+        $type = (int) ($notification['notificationType'] ?? 0);
+        $handled = [self::GOOGLE_RECOVERED, self::GOOGLE_RENEWED, self::GOOGLE_PURCHASED, self::GOOGLE_REVOKED];
+
+        if (($message['packageName'] ?? null) !== config('billing.google.package_name')
+            || !in_array($type, $handled, true)) {
+            Log::info('Google webhook skipped', ['message' => $message]);
+            return response()->json(['success' => true]);
+        }
+
+        $token = $notification['purchaseToken'];
+        // Ошибка API → 500, Pub/Sub повторит доставку.
+        $subscription = $google->subscription($token);
+        $orderId = $subscription['latestOrderId'];
+
+        if ($type === self::GOOGLE_REVOKED) {
+            $this->payments->refunded($orderId);
+            return response()->json(['success' => true]);
+        }
+
+        $line = $subscription['lineItems'][0];
+        if (($subscription['acknowledgementState'] ?? null) === 'ACKNOWLEDGEMENT_STATE_PENDING') {
+            $google->acknowledge($line['productId'], $token);
+        }
+
+        $uuid = $subscription['externalAccountIdentifiers']['obfuscatedExternalAccountId'] ?? null;
+        if ($uuid) {
+            $this->payments->paid($uuid, $orderId, Carbon::parse($line['expiryTime']), $subscription);
+        } else {
+            Log::warning('Google webhook: purchase without invoice uuid', ['orderId' => $orderId]);
         }
 
         return response()->json(['success' => true]);
