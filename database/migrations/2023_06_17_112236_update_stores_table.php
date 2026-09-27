@@ -14,6 +14,10 @@ return new class extends Migration
      */
     public function up()
     {
+        // MySQL-синтаксис; в тестовой sqlite пропускаем.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
         DB::statement('ALTER TABLE stores MODIFY lat DECIMAL(10, 6) NULL, MODIFY lon DECIMAL(10, 6) NULL;');
     }
 

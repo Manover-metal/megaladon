@@ -14,8 +14,8 @@ class UpdateChatsTable extends Migration
     public function up()
     {
         Schema::table('chats', function (Blueprint $table) {
-            $table->dropColumn('iniciator_id');
-            $table->dropColumn('user_id');
+            // sqlite (тесты) не умеет два dropColumn в одном изменении.
+            $table->dropColumn(['iniciator_id', 'user_id']);
         });
     }
 
