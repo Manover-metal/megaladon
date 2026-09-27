@@ -66,7 +66,12 @@ class User extends Authenticatable
 
     public function countCompletedOrders()
     {
-        return $this->hasMany(Order::class, 'executor_id')
+        // orders.executor_id хранит id исполнителя, а не пользователя.
+        if (is_null($this->executor)) {
+            return 0;
+        }
+
+        return Order::where('executor_id', $this->executor->id)
             ->where('status', Order::STATUS_COMPLETED)
             ->count();
     }
