@@ -9,4 +9,6 @@ return [
     'invoice_not_found'              => 'Invoice not found',
     'transaction_check_failed'       => 'Failed to verify the transaction. Error code: :code, error text: :description',
     'transaction_not_paid'           => 'The transaction was not paid',
+    'store_product_missing'          => 'This plan cannot be paid via the app store',
+    'manual_payment_disabled'        => 'Payment via manager is currently unavailable',
 ];

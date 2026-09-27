@@ -24,6 +24,7 @@ Route::group([
     Route::crud('order-category', 'OrderCategoryCrudController');
     Route::crud('subscription', 'SubscriptionCrudController');
     Route::crud('invoice', 'InvoiceCrudController');
+    Route::crud('setting', 'SettingCrudController');
     Route::crud('executor', 'ExecutorCrudController');
     Route::crud('store', 'StoreCrudController');
     Route::crud('rating', 'RatingCrudController');

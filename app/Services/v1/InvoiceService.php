@@ -3,6 +3,7 @@
 namespace App\Services\v1;
 
 use App\Models\Invoice;
+use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Repositories\InvoiceRepo;
@@ -36,9 +37,18 @@ class InvoiceService extends BaseService
             return $this->errValidate(__('invoice.subscription_not_for_executor'));
         }
 
+        if ($error = $this->paymentMethodError($subscription, $data)) {
+            return $error;
+        }
+        unset($data['platform']);
+        // Явный null из запроса перетёр бы дефолт модели, колонка NOT NULL.
+        $data['payment_method'] = $data['payment_method'] ?? Invoice::METHOD_MANUAL;
+
         if ($subscription->price == 0) {
             $data['status'] = Invoice::STATUS_PAID;
             $data['expired_at'] = Carbon::now()->addMonths($subscription->validity);
+            // Бесплатный тариф в магазин не ходит.
+            $data['payment_method'] = Invoice::METHOD_MANUAL;
         }
 
         $invoice = $executor->invoices()->create($data);
@@ -46,6 +56,7 @@ class InvoiceService extends BaseService
         return $this->result([
             'data' => [
                 'invoice_id' => $invoice->id,
+                'uuid' => $invoice->uuid,
                 'phone' => $user->phone,
                 'user_id' => $user->id,
             ]
@@ -67,9 +78,18 @@ class InvoiceService extends BaseService
             return $this->errValidate(__('invoice.subscription_not_for_store'));
         }
 
+        if ($error = $this->paymentMethodError($subscription, $data)) {
+            return $error;
+        }
+        unset($data['platform']);
+        // Явный null из запроса перетёр бы дефолт модели, колонка NOT NULL.
+        $data['payment_method'] = $data['payment_method'] ?? Invoice::METHOD_MANUAL;
+
         if ($subscription->price == 0) {
             $data['status'] = Invoice::STATUS_PAID;
             $data['expired_at'] = Carbon::now()->addMonths($subscription->validity);
+            // Бесплатный тариф в магазин не ходит.
+            $data['payment_method'] = Invoice::METHOD_MANUAL;
         }
 
         $invoice = $store->invoices()->create($data);
@@ -77,6 +97,7 @@ class InvoiceService extends BaseService
         return $this->result([
             'data' => [
                 'invoice_id' => $invoice->id,
+                'uuid' => $invoice->uuid,
                 'phone' => $user->phone,
                 'user_id' => $user->id,
             ]
@@ -114,6 +135,39 @@ class InvoiceService extends BaseService
         }
 
         return $this->ok();
+    }
+
+    public function paymentMethods(string $platform): array
+    {
+        return $this->result(['manual' => Setting::flag('manual_payment_' . $platform)]);
+    }
+
+    /**
+     * Ошибка 422, если выбранный способ оплаты для тарифа недоступен, иначе null.
+     * Бесплатный тариф активируется сразу — для него способ не важен.
+     */
+    private function paymentMethodError(Subscription $subscription, array $data): ?array
+    {
+        if ($subscription->price == 0) {
+            return null;
+        }
+
+        $method = $data['payment_method'] ?? Invoice::METHOD_MANUAL;
+
+        if ($method === Invoice::METHOD_APPLE && empty($subscription->apple_product_id)) {
+            return $this->errValidate(__('invoice.store_product_missing'));
+        }
+        if ($method === Invoice::METHOD_GOOGLE && empty($subscription->google_product_id)) {
+            return $this->errValidate(__('invoice.store_product_missing'));
+        }
+        // platform не присылают старые версии приложения — у них флаг не проверяем,
+        // иначе у них сломается покупка.
+        if ($method === Invoice::METHOD_MANUAL && !empty($data['platform'])
+            && !Setting::flag('manual_payment_' . $data['platform'])) {
+            return $this->errValidate(__('invoice.manual_payment_disabled'));
+        }
+
+        return null;
     }
 
     private function checkTransaction($transaction_id)

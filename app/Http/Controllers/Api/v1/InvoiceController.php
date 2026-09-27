@@ -28,6 +28,12 @@ class InvoiceController extends ApiController
         return $this->result($this->service->storeCreate($this->authUser(), $data));
     }
 
+    public function paymentMethods(Request $request)
+    {
+        $data = $request->validate(['platform' => ['required', 'in:ios,android']]);
+        return $this->result($this->service->paymentMethods($data['platform']));
+    }
+
     public function paid($id, PaidInvoiceRequest $request)
     {
         $data = $request->validated();

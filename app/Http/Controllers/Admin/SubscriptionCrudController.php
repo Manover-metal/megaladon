@@ -53,6 +53,8 @@ class SubscriptionCrudController extends CrudController
             'name' => 'price',
             'label' => 'Цена',
         ]);
+        CRUD::column('apple_product_id')->label('App Store');
+        CRUD::column('google_product_id')->label('Google Play');
 
         /**
          * Columns can be defined using the fluent syntax or array syntax:
@@ -84,6 +86,16 @@ class SubscriptionCrudController extends CrudController
         CRUD::addField([
             'name' => 'price',
             'label' => 'Цена',
+        ]);
+        CRUD::addField([
+            'name' => 'apple_product_id',
+            'label' => 'Product ID в App Store',
+            'hint' => 'Как в App Store Connect. Пусто — на iOS тариф через магазин не купить.',
+        ]);
+        CRUD::addField([
+            'name' => 'google_product_id',
+            'label' => 'Product ID в Google Play',
+            'hint' => 'Как в Play Console. Пусто — на Android тариф через магазин не купить.',
         ]);
 
         /**

@@ -9,4 +9,6 @@ return [
     'invoice_not_found'              => 'Шот табылмады',
     'transaction_check_failed'       => 'Транзакцияны тексеру мүмкін болмады. Қате коды: :code, қате мәтіні: :description',
     'transaction_not_paid'           => 'Транзакция төленбеген',
+    'store_product_missing'          => 'Бұл тарифті қолданбалар дүкені арқылы төлеуге болмайды',
+    'manual_payment_disabled'        => 'Менеджер арқылы төлеу қазір қолжетімсіз',
 ];

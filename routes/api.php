@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\v1\{
     ProductCategoryController,
     StoreController,
     SubscriptionController,
+    StoreWebhookController,
     ServiceTypeController,
 };
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,7 @@ Route::group(['guard' => 'api'], function () {
     Route::get('/advert-categories', [CatalogController::class, 'advertCategories']);
     Route::get('/address', [OpenStreetMapController::class, 'getAddress']);
     Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+    Route::get('/payment-methods', [InvoiceController::class, 'paymentMethods']);
     Route::get('/service-types', [ServiceTypeController::class, 'index']);
     Route::get('/company-types', [StoreController::class, 'types']);
     
@@ -150,3 +152,7 @@ Route::group(['guard' => 'api'], function () {
         Route::delete('/delete-message/{id}', [ChatController::class, 'deleteMessage']);
     });
 });
+
+// Вебхуки магазинов: без авторизации пользователя, разбор — в контроллере.
+Route::post('/webhooks/apple', [StoreWebhookController::class, 'apple']);
+Route::post('/webhooks/google/{secret}', [StoreWebhookController::class, 'google']);

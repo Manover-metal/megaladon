@@ -17,6 +17,8 @@ class Subscription extends Model
         'type',
         'validity',
         'price',
+        'apple_product_id',
+        'google_product_id',
     ];
 
     public function getFullAttribute($value)

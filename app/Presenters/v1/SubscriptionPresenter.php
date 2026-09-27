@@ -12,7 +12,9 @@ class SubscriptionPresenter extends BasePresenter
             'id' => $this->id,
             'type' => $this->type,
             'duration' => $this->validity,
-            'price' => $this->price, 
+            'price' => $this->price,
+            'apple_product_id' => $this->apple_product_id,
+            'google_product_id' => $this->google_product_id,
         ];
     }
 }

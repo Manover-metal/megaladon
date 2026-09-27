@@ -62,6 +62,16 @@ class InvoiceCrudController extends CrudController
                 'EXPIRED' => 'Истекло',
             ],
         ]);
+        CRUD::addColumn([
+            'name' => 'payment_method',
+            'label' => 'Способ оплаты',
+            'type' => 'select_from_array',
+            'options' => [
+                Invoice::METHOD_APPLE => 'App Store',
+                Invoice::METHOD_GOOGLE => 'Google Play',
+                Invoice::METHOD_MANUAL => 'Через менеджера',
+            ],
+        ]);
         CRUD::column('meta');
         CRUD::column('expired_at')->label('Истекает');
 

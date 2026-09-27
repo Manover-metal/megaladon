@@ -25,6 +25,8 @@ class CreateInvoiceRequest extends FormRequest
     {
         return [
             'subscription_id' => ['required', 'integer', 'exists:subscriptions,id'],
+            'payment_method' => ['nullable', 'in:apple,google,manual'],
+            'platform' => ['nullable', 'in:ios,android'],
         ];
     }
 }

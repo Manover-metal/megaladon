@@ -17,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Перенос данных на MySQL (NOW()); в пустой тестовой sqlite переносить нечего.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement(<<<'SQL'
             INSERT INTO order_views
                 (user_id, order_id, seen_status, seen_offers_count, seen_updated_at, created_at, updated_at)
