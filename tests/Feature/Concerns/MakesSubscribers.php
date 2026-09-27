@@ -55,7 +55,6 @@ trait MakesSubscribers
     {
         return Store::create([
             'user_id' => $user->id,
-            'type_id' => 1,
             'name' => 'Металлобаза',
             'bin' => '123456789012',
             'city_id' => $this->city()->id,

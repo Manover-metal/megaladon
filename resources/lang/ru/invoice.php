@@ -9,4 +9,6 @@ return [
     'invoice_not_found'              => 'Счет не найден',
     'transaction_check_failed'       => 'Не удалось проверить транзакцию. Код ошибки: :code, текст ошибки: :description',
     'transaction_not_paid'           => 'Транзакция не была оплачена',
+    'store_product_missing'          => 'Этот тариф нельзя оплатить через магазин приложений',
+    'manual_payment_disabled'        => 'Оплата через менеджера сейчас недоступна',
 ];

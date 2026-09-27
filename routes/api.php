@@ -36,6 +36,7 @@ Route::group(['guard' => 'api'], function () {
     Route::get('/advert-categories', [CatalogController::class, 'advertCategories']);
     Route::get('/address', [OpenStreetMapController::class, 'getAddress']);
     Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+    Route::get('/payment-methods', [InvoiceController::class, 'paymentMethods']);
     Route::get('/service-types', [ServiceTypeController::class, 'index']);
     Route::get('/company-types', [StoreController::class, 'types']);
     
