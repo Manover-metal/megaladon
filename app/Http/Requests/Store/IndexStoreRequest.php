@@ -28,7 +28,9 @@ class IndexStoreRequest extends FormRequest
             'startRow' => ['nullable', 'integer'],
             'type_id' => ['nullable', 'integer', 'exists:company_types,id'],
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],
-            'name' => ['nullable', 'string'],
+            'name' => ['nullable', 'string', 'max:100'],
+            'rating_min' => ['nullable', 'numeric', 'min:0', 'max:5'],
+            'sort' => ['nullable', 'in:new,rating,name'],
         ];
     }
 }

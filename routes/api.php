@@ -17,6 +17,9 @@ use App\Http\Controllers\Api\v1\{
     SubscriptionController,
     StoreWebhookController,
     ServiceTypeController,
+    SafetyController,
+    SupportController,
+    AdminController,
 };
 use Illuminate\Support\Facades\Route;
 
@@ -142,6 +145,17 @@ Route::group(['guard' => 'api'], function () {
         Route::get('/{id}', [ExecutorController::class, 'info'])->whereNumber('id');
     });
 
+    // Блокировки и жалобы (см. SafetyService), обращения в поддержку.
+    // auth:api — часть ручек без FormRequest, и authUser() не должен быть null.
+    Route::group(['middleware' => ['api', 'auth:api']], function () {
+        Route::get('/blocks', [SafetyController::class, 'blocked']);
+        Route::post('/blocks', [SafetyController::class, 'block']);
+        Route::delete('/blocks/{userId}', [SafetyController::class, 'unblock'])->whereNumber('userId');
+        Route::post('/reports', [SafetyController::class, 'report']);
+        Route::get('/support/tickets', [SupportController::class, 'index']);
+        Route::post('/support/tickets', [SupportController::class, 'store']);
+    });
+
     Route::group(['prefix' => 'chat', 'middleware' => 'api'], function () {
         Route::get('/', [ChatController::class, 'getChats']);
         Route::post('/create', [ChatController::class, 'createChat']);
@@ -150,6 +164,27 @@ Route::group(['guard' => 'api'], function () {
         Route::get('/{id}', [ChatController::class, 'getMessages']);
         Route::put('/edit-message/{id}', [ChatController::class, 'editMessage']);
         Route::delete('/delete-message/{id}', [ChatController::class, 'deleteMessage']);
+    });
+});
+
+// API Next.js-админки (megaladon_admin): токен Sanctum + role = admin.
+// Без throttle: одна страница админки — это несколько запросов подряд.
+Route::prefix('admin')->withoutMiddleware('throttle:api')->group(function () {
+    Route::post('/login', [AdminController::class, 'login']);
+
+    Route::middleware(['auth:api', 'admin'])->group(function () {
+        Route::delete('/logout', [AdminController::class, 'logout']);
+        Route::get('/me', [AdminController::class, 'me']);
+        Route::get('/stats', [AdminController::class, 'stats']);
+        Route::get('/badges', [AdminController::class, 'badges']);
+
+        Route::get('/{resource}', [AdminController::class, 'index']);
+        Route::get('/{resource}/options', [AdminController::class, 'options']);
+        Route::get('/{resource}/{id}', [AdminController::class, 'show'])->whereNumber('id');
+        Route::post('/{resource}', [AdminController::class, 'store']);
+        Route::post('/{resource}/{id}', [AdminController::class, 'update'])->whereNumber('id');
+        Route::delete('/{resource}/{id}', [AdminController::class, 'destroy'])->whereNumber('id');
+        Route::post('/{resource}/{id}/action/{action}', [AdminController::class, 'action'])->whereNumber('id');
     });
 });
 

@@ -44,6 +44,10 @@ class AuthService extends BaseService
             return $this->error(401, __('account.invalid_credentials'));
         }
 
+        if ($user->isBanned()) {
+            return $this->errFobidden(__('account.banned', ['reason' => $user->ban_reason ?: '—']));
+        }
+
         $token = $user->createToken('api')->plainTextToken;
 
         return $this->result([

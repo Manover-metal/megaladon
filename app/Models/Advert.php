@@ -2,16 +2,25 @@
 
 namespace App\Models;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Advert extends Model
 {
-    use HasFactory, CrudTrait;
+    use HasFactory;
 
     const TYPE_SERVICE = 'service';
     const TYPE_ADVERT = 'advert';
+
+    const STATUS_MODERATE = 1;
+    const STATUS_ACTIVE = 2;
+    const STATUS_REJECTED = 3;
+
+    const STATUS_NAMES = [
+        self::STATUS_MODERATE => 'На проверке',
+        self::STATUS_ACTIVE => 'Активно',
+        self::STATUS_REJECTED => 'Отклонено',
+    ];
 
     protected $fillable = [
         'type',
@@ -23,7 +32,14 @@ class Advert extends Model
         'city_id',
         'additional_phone',
         'type',
+        'status',
+        'reject_reason',
     ];
+
+    public function getStatusName(): string
+    {
+        return self::STATUS_NAMES[$this->status] ?? (string) $this->status;
+    }
 
     public function user()
     {

@@ -88,8 +88,28 @@ class OrderRepo
             );
         }
 
-        if (isset($params['city_id'])) {
-            $query->where('city_id', $params['city_id']);
+        if (!empty($params['q'])) {
+            $like = '%' . addcslashes($params['q'], '%_\\') . '%';
+            $query->where(fn ($q) => $q->where('title', 'like', $like)
+                ->orWhere('description', 'like', $like));
+        }
+
+        // Бюджет заказа — price_max, его и показывает карточка.
+        if (isset($params['price_min'])) {
+            $query->where('price_max', '>=', $params['price_min']);
+        }
+
+        if (isset($params['price_max'])) {
+            $query->where('price_max', '<=', $params['price_max']);
+        }
+
+        if (isset($params['execution_days_max'])) {
+            $query->where('execution_days', '<=', $params['execution_days_max']);
+        }
+
+        // «Без откликов» — для исполнителя, который хочет быть первым.
+        if (!empty($params['without_offers'])) {
+            $query->doesntHave('offers');
         }
 
         if (isset($params['last'])) {
@@ -131,6 +151,9 @@ class OrderRepo
         if (isset($params['sortBy'])) {
             $query->orderBy($params['sortBy'], $desc);
         }
+        // Вторичный ключ: при равных ценах/статусах порядок не прыгает между
+        // страницами пагинации.
+        $query->orderBy('id', 'DESC');
 
         return $query;
     }

@@ -30,7 +30,9 @@ class IndexMyAdvertsRequest extends FormRequest
             'price_max' => ['nullable', 'numeric'],
             'last' => ['nullable', 'string'],
             'city_id' => ['nullable', 'integer'],
-            'type' => ['nullable', 'in:service,advert'],
+            'q' => ['nullable', 'string', 'max:100'],
+            'with_photo' => ['nullable', 'boolean'],
+            'sort' => ['nullable', 'in:new,old,price_asc,price_desc'],
             'startRow' => ['nullable', 'integer'],
             'rowsPerPage' => ['nullable', 'integer']
         ];

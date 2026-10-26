@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Rating extends Model
 {
-    use HasFactory, CrudTrait;
+    use HasFactory;
 
     /**
      * Типы объектов, к которым может относиться отзыв.
@@ -25,8 +24,7 @@ class Rating extends Model
         'user_id',
         'rate',
         'comment',
-        // Виртуальное поле формы админки: связь ratingable полиморфная,
-        // и одним штатным полем бесплатного Backpack её не выбрать.
+        // Виртуальное поле формы админки: связь ratingable полиморфная.
         // Должно быть в fillable, иначе fill() не вызовет мутатор.
         'ratingable_key',
     ];

@@ -70,13 +70,17 @@ class OrderService extends BaseService
             return $this->error(406, __('order.already_offered'));
         }
 
+        $order = Order::find($orderId);
+
+        if ($order && \App\Models\UserBlock::existsBetween($user->id, $order->user_id)) {
+            return $this->errFobidden(__('order.user_blocked'));
+        }
+
         $data['order_id'] = $orderId;
         $data['user_id'] = $user->id;
         $data['status'] = Order::STATUS_ACTIVE;
 
         $offerRepo->store($data);
-
-        $order = Order::find($orderId);
 
         // С этого момента заказ показывается исполнителю во вкладке «как
         // исполнитель», поэтому заводим строку просмотра. Без неё

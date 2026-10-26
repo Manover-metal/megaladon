@@ -46,8 +46,12 @@ class StoreRepo
         // Фильтр общий для index() и count(), чтобы счётчик и пагинация сходились.
         $query->hasActiveSubscription();
 
-        if (isset($params['name'])) {
-            $query->where('name', $params['name']);
+        if (!empty($params['name'])) {
+            $query->where('name', 'like', '%' . addcslashes($params['name'], '%_\\') . '%');
+        }
+
+        if (isset($params['rating_min'])) {
+            $query->where('rating', '>=', $params['rating_min']);
         }
 
         if (isset($params['city_id'])) {
@@ -77,11 +81,15 @@ class StoreRepo
 
     private function applyOrderBy($query, $params)
     {
-        $desc = isset($params['desc']) ? $params['desc'] : false;
-
-        if (isset($params['sortBy'])) {
-            $query->orderBy($params['sortBy'], $desc);
+        switch ($params['sort'] ?? 'new') {
+            case 'rating':
+                $query->orderBy('rating', 'DESC');
+                break;
+            case 'name':
+                $query->orderBy('name');
+                break;
         }
+        $query->orderBy('id', 'DESC');
 
         return $query;
     }

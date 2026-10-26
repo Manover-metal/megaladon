@@ -14,6 +14,8 @@ class AdvertPresenter extends BasePresenter
             'description' => mb_strimwidth($this->description, 0, 128, '...'),
             'price'       => $this->price !== null ? (float) $this->price : null,
             'type'        => $this->type ?? 'advert',
+            'status'      => (int) ($this->status ?? 2),
+            'reject_reason' => $this->reject_reason,
             'category'    => $this->category ? [
                 'id'   => $this->category->id,
                 'name' => $this->category->name,
@@ -35,6 +37,8 @@ class AdvertPresenter extends BasePresenter
             'description'      => $this->description,
             'price'            => $this->price !== null ? (float) $this->price : null,
             'type'             => $this->type ?? 'advert',
+            'status'           => (int) ($this->status ?? 2),
+            'reject_reason'    => $this->reject_reason,
             'additional_phone' => $this->additional_phone,
             'category'         => $this->category ? [
                 'id'   => $this->category->id,

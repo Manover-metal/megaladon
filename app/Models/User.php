@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,7 +13,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, CrudTrait, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -40,6 +39,33 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
     ];
+
+    protected $casts = [
+        'banned_at' => 'datetime',
+    ];
+
+    public function isBanned(): bool
+    {
+        return !is_null($this->banned_at);
+    }
+
+    // Бан выкидывает из приложения сразу: токены удаляются, следующий запрос
+    // получает 401, вход по паролю отказывает в AuthService::login.
+    public function ban(?string $reason): void
+    {
+        $this->forceFill(['banned_at' => now(), 'ban_reason' => $reason])->save();
+        $this->tokens()->delete();
+    }
+
+    public function unban(): void
+    {
+        $this->forceFill(['banned_at' => null, 'ban_reason' => null])->save();
+    }
+
+    public function blocks()
+    {
+        return $this->hasMany(UserBlock::class);
+    }
 
     /**
      * Куда канал FCM отправляет пуш для этого пользователя.

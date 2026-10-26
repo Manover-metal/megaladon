@@ -25,6 +25,7 @@ class AdvertController extends ApiController
         // Флаг ставим здесь, а не в AdvertService::index: тот же метод сервиса
         // обслуживает и /adverts/my, где свои объявления скрывать не нужно.
         $params['exclude_deleted_users'] = true;
+        $params['only_active'] = true;
 
         return $this->result($this->advertService->index($params));
     }
