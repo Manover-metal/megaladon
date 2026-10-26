@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\v1\{
     ServiceTypeController,
     SafetyController,
     SupportController,
+    AdminController,
 };
 use Illuminate\Support\Facades\Route;
 
@@ -163,6 +164,27 @@ Route::group(['guard' => 'api'], function () {
         Route::get('/{id}', [ChatController::class, 'getMessages']);
         Route::put('/edit-message/{id}', [ChatController::class, 'editMessage']);
         Route::delete('/delete-message/{id}', [ChatController::class, 'deleteMessage']);
+    });
+});
+
+// API Next.js-админки (megaladon_admin): токен Sanctum + role = admin.
+// Без throttle: одна страница админки — это несколько запросов подряд.
+Route::prefix('admin')->withoutMiddleware('throttle:api')->group(function () {
+    Route::post('/login', [AdminController::class, 'login']);
+
+    Route::middleware(['auth:api', 'admin'])->group(function () {
+        Route::delete('/logout', [AdminController::class, 'logout']);
+        Route::get('/me', [AdminController::class, 'me']);
+        Route::get('/stats', [AdminController::class, 'stats']);
+        Route::get('/badges', [AdminController::class, 'badges']);
+
+        Route::get('/{resource}', [AdminController::class, 'index']);
+        Route::get('/{resource}/options', [AdminController::class, 'options']);
+        Route::get('/{resource}/{id}', [AdminController::class, 'show'])->whereNumber('id');
+        Route::post('/{resource}', [AdminController::class, 'store']);
+        Route::post('/{resource}/{id}', [AdminController::class, 'update'])->whereNumber('id');
+        Route::delete('/{resource}/{id}', [AdminController::class, 'destroy'])->whereNumber('id');
+        Route::post('/{resource}/{id}/action/{action}', [AdminController::class, 'action'])->whereNumber('id');
     });
 });
 
