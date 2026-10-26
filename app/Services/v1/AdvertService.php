@@ -29,6 +29,11 @@ class AdvertService extends BaseService
             return $this->errNotFound(__('advert.not_found'));
         }
 
+        // Непрошедшее модерацию объявление видит только автор.
+        if ($advert->status != Advert::STATUS_ACTIVE && $advert->user_id != auth('api')->id()) {
+            return $this->errNotFound(__('advert.not_found'));
+        }
+
         return $this->result([
             'advert' => (new AdvertPresenter($advert))->info(),
         ]);
@@ -49,6 +54,7 @@ class AdvertService extends BaseService
         }
 
         $data['user_id'] = $user->id;
+        $data['status'] = Advert::STATUS_MODERATE;
 
         $advert = $this->advertRepo->store($data);
 
@@ -94,6 +100,9 @@ class AdvertService extends BaseService
             }
         }
         unset($data['files']);
+        // После правок объявление снова уходит на проверку.
+        $data['status'] = Advert::STATUS_MODERATE;
+        $data['reject_reason'] = null;
 
         $this->advertRepo->update($advert->id, $data);
 

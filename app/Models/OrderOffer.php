@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class OrderOffer extends Model
 {
-    use HasFactory, CrudTrait;
+    use HasFactory;
 
     // За что указана цена — колонка enum price_type, по умолчанию total.
     // PHP 8.0: нативных enum ещё нет, поэтому константы.

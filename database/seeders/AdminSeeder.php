@@ -9,8 +9,8 @@ use Illuminate\Database\Seeder;
 class AdminSeeder extends Seeder
 {
     /**
-     * Создаёт администратора для входа в Backpack (/admin).
-     * Логин — по email, доступ в панель гейтит CheckIfAdmin по role === 'admin'.
+     * Создаёт администратора для входа в админку (megaladon_admin).
+     * Логин — по email, доступ в админку — по role === 'admin'.
      *
      * Идемпотентно: повторный запуск обновляет существующего админа,
      * а не плодит дубликаты. Значения можно переопределить через .env.

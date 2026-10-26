@@ -9,4 +9,5 @@ return [
     'cannot_chat_with_self'      => 'You cannot message yourself',
     'companion_not_found'        => 'Companion not found',
     'not_a_member'               => 'You are not a member of this chat',
+    'user_blocked' => 'You cannot message this user',
 ];

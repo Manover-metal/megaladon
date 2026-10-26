@@ -19,4 +19,5 @@ return [
     'cannot_rate_foreign'         => 'You cannot rate the executor of another user\'s order',
     'cannot_rate_yet'             => 'You cannot rate the executor yet',
     'offer_not_sent_to_you'       => 'The executor did not send you an offer for this order',
+    'user_blocked' => 'You cannot respond to this user\'s order',
 ];

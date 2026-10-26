@@ -43,20 +43,27 @@ class AdvertRepo
             $query->where('category_id', $params['category']);
         }
 
-        if (isset($params['type'])) {
-            $query->where('type', $params['type']);
-        }
-
         if(isset($params['city_id'])) {
             $query->where('city_id', $params['city_id']);
         }
 
+        // Границы цены включительно: «от 1000» должно найти и ровно 1000.
         if(isset($params['price_min'])) {
-            $query->where('price', '>', $params['price_min']);
+            $query->where('price', '>=', $params['price_min']);
         }
 
         if(isset($params['price_max'])) {
-            $query->where('price', '<', $params['price_max']);
+            $query->where('price', '<=', $params['price_max']);
+        }
+
+        if (!empty($params['q'])) {
+            $like = '%' . addcslashes($params['q'], '%_\\') . '%';
+            $query->where(fn ($q) => $q->where('title', 'like', $like)
+                ->orWhere('description', 'like', $like));
+        }
+
+        if (!empty($params['with_photo'])) {
+            $query->has('media');
         }
 
         if (isset($params['last'])) {
@@ -73,6 +80,11 @@ class AdvertRepo
 
         if (isset($params['user_id'])) {
             $query->where('user_id', $params['user_id']);
+        }
+        // Публичная лента — только прошедшие модерацию. В /adverts/my флага
+        // нет: автор видит и те, что на проверке или отклонены.
+        if (!empty($params['only_active'])) {
+            $query->where('status', Advert::STATUS_ACTIVE);
         }
 
         // Объявления и услуги удалённых аккаунтов убираем с торговой площадки:
@@ -102,7 +114,20 @@ class AdvertRepo
 
     private function applyOrderBy($query, $params)
     {
-        $query->orderBy('id', 'DESC');
+        switch ($params['sort'] ?? 'new') {
+            case 'old':
+                $query->orderBy('id');
+                break;
+            case 'price_asc':
+                // Без цены («договорная») — в конец, а не в начало списка.
+                $query->orderByRaw('price IS NULL')->orderBy('price')->orderBy('id', 'DESC');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'DESC')->orderBy('id', 'DESC');
+                break;
+            default:
+                $query->orderBy('id', 'DESC');
+        }
         return $query;
     }
 }

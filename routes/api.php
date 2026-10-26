@@ -17,6 +17,8 @@ use App\Http\Controllers\Api\v1\{
     SubscriptionController,
     StoreWebhookController,
     ServiceTypeController,
+    SafetyController,
+    SupportController,
 };
 use Illuminate\Support\Facades\Route;
 
@@ -140,6 +142,17 @@ Route::group(['guard' => 'api'], function () {
         // Страница исполнителя по id исполнителя (не пользователя). Только
         // число — чтобы не перехватывать /favorite и /my/ratings.
         Route::get('/{id}', [ExecutorController::class, 'info'])->whereNumber('id');
+    });
+
+    // Блокировки и жалобы (см. SafetyService), обращения в поддержку.
+    // auth:api — часть ручек без FormRequest, и authUser() не должен быть null.
+    Route::group(['middleware' => ['api', 'auth:api']], function () {
+        Route::get('/blocks', [SafetyController::class, 'blocked']);
+        Route::post('/blocks', [SafetyController::class, 'block']);
+        Route::delete('/blocks/{userId}', [SafetyController::class, 'unblock'])->whereNumber('userId');
+        Route::post('/reports', [SafetyController::class, 'report']);
+        Route::get('/support/tickets', [SupportController::class, 'index']);
+        Route::post('/support/tickets', [SupportController::class, 'store']);
     });
 
     Route::group(['prefix' => 'chat', 'middleware' => 'api'], function () {

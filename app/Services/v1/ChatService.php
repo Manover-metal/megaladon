@@ -6,6 +6,7 @@ use App\Events\NewMessageEvent;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Models\UserBlock;
 use App\Presenters\v1\ChatPresenter;
 use App\Repositories\ChatRepo;
 use App\Services\BaseService;
@@ -60,6 +61,11 @@ class ChatService extends BaseService
 
     public function sendMessage(User $user, array $data)
     {
+        $companionId = Chat::find($data['chat_id'])?->members()->whereKeyNot($user->id)->value('users.id');
+        if ($companionId && UserBlock::existsBetween($user->id, $companionId)) {
+            return $this->errFobidden(__('chat.user_blocked'));
+        }
+
         $data['user_id'] = $user->id;
 
         if (isset($data['file'])) {
@@ -118,6 +124,10 @@ class ChatService extends BaseService
         $companion = User::find($companionId);
         if (is_null($companion)) {
             return $this->errNotFound(__('chat.companion_not_found'));
+        }
+
+        if (UserBlock::existsBetween($author->id, $companionId)) {
+            return $this->errFobidden(__('chat.user_blocked'));
         }
 
         $chat = $this->chatRepo->findByMembers($author->id, $companionId);
