@@ -16,9 +16,9 @@ class AdvertPresenter extends BasePresenter
             'type'        => $this->type ?? 'advert',
             'status'      => (int) ($this->status ?? 2),
             'reject_reason' => $this->reject_reason,
-            'category'    => $this->category ? [
-                'id'   => $this->category->id,
-                'name' => $this->category->name,
+            'category'    => ($c = $this->categoryRecord()) ? [
+                'id'   => $c->id,
+                'name' => $c->{$c::LABEL},
             ] : null,
             'city'        => $this->city ? [
                 'id'   => $this->city->id,
@@ -40,9 +40,9 @@ class AdvertPresenter extends BasePresenter
             'status'           => (int) ($this->status ?? 2),
             'reject_reason'    => $this->reject_reason,
             'additional_phone' => $this->additional_phone,
-            'category'         => $this->category ? [
-                'id'   => $this->category->id,
-                'name' => $this->category->name,
+            'category'         => ($c = $this->categoryRecord()) ? [
+                'id'   => $c->id,
+                'name' => $c->{$c::LABEL},
             ] : null,
             'city'             => $this->city ? [
                 'id'   => $this->city->id,

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Executor;
 
+use App\Models\OrderCategory;
+use App\Rules\LeafCategory;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExecutorUpdateRequest extends FormRequest
@@ -27,10 +29,8 @@ class ExecutorUpdateRequest extends FormRequest
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:3000'],
             'bin' => ['nullable', 'string', 'min:12', 'max:12'],
-            'lat' => ['nullable', 'numeric'],
-            'lon' => ['nullable', 'numeric'],
             'full_address' => ['nullable', 'string', 'max:255'],
-            'services.*' => ['required', 'integer', 'exists:order_categories,id'],
+            'services.*' => ['required', 'integer', new LeafCategory(OrderCategory::class)],
         ];
     }
 }

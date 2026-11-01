@@ -10,12 +10,10 @@ class ExecutorPresenter extends BasePresenter
     {
         return [
             'id' => $this->id,
-            'services' => $this->presentCollections($this->services, ServiceTypePresenter::class, 'list'),
+            'services' => $this->presentCollections($this->services, OrderCategoryPresenter::class, 'executorList'),
             'name' => $this->name,
             'description' => $this->description,
             'bin' => $this->bin ?? null,
-            'lat' => $this->lat,
-            'lon' => $this->lon,
             'full_address' => $this->full_address,
             'rating' => $this->rating ?? null,
             // Страница исполнителя показывает аватар и счётчик заказов —
@@ -43,7 +41,7 @@ class ExecutorPresenter extends BasePresenter
                 : null,
             // Список исполнителей показывает, какие работы человек делает, —
             // без services карточка сообщала только имя и оценку.
-            'services' => $this->presentCollections($this->services, ServiceTypePresenter::class, 'list'),
+            'services' => $this->presentCollections($this->services, OrderCategoryPresenter::class, 'executorList'),
             'count_orders' => $this->user ? $this->user->countCompletedOrders() : null,
             'user_id' => $this->user ? $this->user->id : null,
         ];

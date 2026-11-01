@@ -4,20 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AdCategory extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, CategoryTree;
+
+    public const LABEL = 'name';
 
     protected $fillable = ['name', 'parent_id'];
-
-    public function child()
-    {
-        return $this->hasMany(AdCategory::class, 'parent_id');
-    }
-
-    public function parent()
-    {
-        return $this->belongsTo(AdCategory::class, 'parent_id');
-    }
 }

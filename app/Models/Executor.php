@@ -15,15 +15,13 @@ class Executor extends Model
         'name',
         'description',
         'bin',
-        'lat',
-        'lon',
         'full_address',
         'rating',
     ];
 
     public function services()
     {
-        return $this->belongsToMany(ServiceType::class, 'executor_service_types');
+        return $this->belongsToMany(OrderCategory::class, 'executor_service_types', 'executor_id', 'order_category_id');
     }
 
     public function user()

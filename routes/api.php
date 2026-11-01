@@ -10,13 +10,11 @@ use App\Http\Controllers\Api\v1\{
     ChatController,
     CityController,
     InvoiceController,
-    OpenStreetMapController,
     OrderController,
     ProductCategoryController,
     StoreController,
     SubscriptionController,
     StoreWebhookController,
-    ServiceTypeController,
     SafetyController,
     SupportController,
     AdminController,
@@ -38,10 +36,8 @@ Route::group(['guard' => 'api'], function () {
     Route::get('/cities', [CatalogController::class, 'cities']);
     Route::get('/order-categories', [CatalogController::class, 'orderCategories']);
     Route::get('/advert-categories', [CatalogController::class, 'advertCategories']);
-    Route::get('/address', [OpenStreetMapController::class, 'getAddress']);
     Route::get('/subscriptions', [SubscriptionController::class, 'index']);
     Route::get('/payment-methods', [InvoiceController::class, 'paymentMethods']);
-    Route::get('/service-types', [ServiceTypeController::class, 'index']);
     Route::get('/company-types', [StoreController::class, 'types']);
     
     Route::group(['prefix' => '/auth'], function () {

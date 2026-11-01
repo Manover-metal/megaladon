@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Order;
 
+use App\Models\OrderCategory;
+use App\Rules\LeafCategory;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateOrderRequest extends FormRequest
@@ -26,7 +28,7 @@ class UpdateOrderRequest extends FormRequest
         return [
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'category_id' => ['nullable', 'integer', 'exists:order_categories,id'],
+            'category_id' => ['nullable', 'integer', new LeafCategory(OrderCategory::class)],
             'price_recommended' => ['nullable'],
             'price_max' => ['nullable'],
             'execution_days' => ['required', 'integer', 'min:1'],

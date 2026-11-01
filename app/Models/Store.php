@@ -16,8 +16,6 @@ class Store extends Model
         'name',
         'bin',
         'city_id',
-        'lat',
-        'lon',
         'full_address',
         'rating',
     ];

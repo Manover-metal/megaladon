@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Order;
+use App\Models\OrderCategory;
 use Carbon\Carbon;
 
 use function GuzzleHttp\Promise\queue;
@@ -40,7 +41,7 @@ class OrderRepo
     private function applyFilterQuery($query, $params)
     {
         if (isset($params['category'])) {
-            $query->where('category_id', $params['category']);
+            $query->whereIn('category_id', OrderCategory::descendantIds((int) $params['category']));
         }
 
         if (isset($params['city_id'])) {

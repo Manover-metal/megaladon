@@ -65,8 +65,6 @@ class OrderStatusPushTest extends TestCase
         $executor = Executor::create([
             'user_id' => $executorUser->id,
             'name' => 'Цех',
-            'lat' => 43.238949,
-            'lon' => 76.889709,
             'full_address' => 'Алматы, ул. Промышленная, 1',
         ]);
 

@@ -20,6 +20,8 @@ class OrderCategoryPresenter extends BasePresenter
         return [
             'id' => $this->id,
             'title' => $this->title,
+            // Вышедшие сборки приложения читают услуги исполнителя из name.
+            'name' => $this->title,
         ];
     }
 }
