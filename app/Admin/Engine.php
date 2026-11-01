@@ -71,6 +71,9 @@ class Engine
 
     public function list(array $in): array
     {
+        if (!empty($this->r['tree'])) {
+            return $this->treeList($in);
+        }
         $page = max(1, (int) ($in['page'] ?? 1));
         $q = $this->query();
 
@@ -132,6 +135,40 @@ class Engine
             'extra' => isset($this->r['listExtra']) ? $this->r['listExtra']($models) : [],
             'sortCol' => $sortCol,
             'sortDir' => $sortDir,
+        ];
+    }
+
+    /**
+     * Дерево категорий целиком, в порядке обхода: _depth — уровень,
+     * _children — число вложенных. При поиске — найденные с путём (_path).
+     */
+    private function treeList(array $in): array
+    {
+        $model = $this->r['model'];
+        $s = trim((string) ($in['q'] ?? ''));
+        $children = $model::selectRaw('parent_id, count(*) c')->groupBy('parent_id')->pluck('c', 'parent_id');
+
+        $rows = [];
+        foreach ($model::flatTree() as [$m, $depth]) {
+            if ($s !== '' && mb_stripos($m->{$model::LABEL}, $s) === false) {
+                continue;
+            }
+            $rows[] = self::row($m) + [
+                '_depth' => $s === '' ? $depth : 0,
+                '_children' => (int) ($children[$m->id] ?? 0),
+                '_path' => $s === '' ? null : $model::path($m->id),
+            ];
+        }
+
+        return [
+            'rows' => $rows,
+            'total' => count($rows),
+            'page' => 1,
+            'pages' => 1,
+            'labels' => $this->labels($rows),
+            'extra' => [],
+            'sortCol' => '',
+            'sortDir' => 'asc',
         ];
     }
 
@@ -283,7 +320,11 @@ class Engine
 
     public function remove(int $id): void
     {
-        $this->find($id)?->delete();
+        $m = $this->find($id);
+        if ($m && isset($this->r['beforeDelete'])) {
+            $this->r['beforeDelete']($m);
+        }
+        $m?->delete();
     }
 
     /** Кнопка строки (бан, решение жалобы). Возвращает текст ошибки или null. */

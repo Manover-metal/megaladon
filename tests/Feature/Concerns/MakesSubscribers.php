@@ -45,8 +45,6 @@ trait MakesSubscribers
         return Executor::create([
             'user_id' => $user->id,
             'name' => 'Цех',
-            'lat' => 43.238949,
-            'lon' => 76.889709,
             'full_address' => 'Алматы, ул. Промышленная, 1',
         ]);
     }
@@ -58,8 +56,6 @@ trait MakesSubscribers
             'name' => 'Металлобаза',
             'bin' => '123456789012',
             'city_id' => $this->city()->id,
-            'lat' => 43.238949,
-            'lon' => 76.889709,
             'full_address' => 'Алматы, ул. Складская, 2',
         ]);
     }

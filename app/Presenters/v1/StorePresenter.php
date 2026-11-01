@@ -41,8 +41,6 @@ class StorePresenter extends BasePresenter
                 'id' => $this->city->id,
                 'name' => $this->city->name,
             ] : null,
-            'lat' => (double)$this->lat,
-            'lon' => (double)$this->lon,
             'full_address' => $this->full_address,
             'photo_url' => ($this->user && $this->user->photo_url)
                 ? url($this->user->photo_url)

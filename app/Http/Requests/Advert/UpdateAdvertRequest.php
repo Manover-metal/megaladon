@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Advert;
 
+use App\Models\Advert;
+use App\Rules\LeafCategory;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAdvertRequest extends FormRequest
@@ -30,7 +32,7 @@ class UpdateAdvertRequest extends FormRequest
             'description' => ['nullable', 'string'],
             // Границы совпадают с decimal(15,2) в БД, см. CreateAdvertRequest.
             'price' => ['nullable', 'numeric', 'min:0', 'max:9999999999999.99'],
-            'category_id' => ['nullable', 'integer', 'exists:ad_categories,id'],
+            'category_id' => ['nullable', 'integer', new LeafCategory(Advert::categoryModel($this->input('type') ?? Advert::find($this->route('id'))?->type))],
             'city_id' => ['nullable', 'integer', 'exists:cities,id'],
             'additional_phone' => ['nullable', 'string', 'starts_with:+'],
             'files' => ['nullable', 'array'],

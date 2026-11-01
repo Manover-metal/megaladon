@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\OrderCategory;
+use App\Rules\LeafCategory;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExecutorRegisterRequest extends FormRequest
@@ -27,10 +29,8 @@ class ExecutorRegisterRequest extends FormRequest
             'name' => ['required', 'string'],
             'description' => ['nullable', 'string', 'max:3000'],
             'bin' => ['nullable', 'string', 'min:12', 'max:12'],
-            'lon' => ['required', 'numeric'],
-            'lat' => ['required', 'numeric'],
             'full_address' => ['required', 'string', 'max:255'],
-            'services.*' => ['required', 'integer', 'exists:order_categories,id'],
+            'services.*' => ['required', 'integer', new LeafCategory(OrderCategory::class)],
         ];
     }
 }

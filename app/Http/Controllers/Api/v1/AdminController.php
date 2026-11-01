@@ -21,7 +21,9 @@ class AdminController extends ApiController
         $login = trim((string) $request->input('login'));
         // Телефон в базе — +7XXXXXXXXXX; принимаем 8/7/+7 с любыми разделителями, либо email.
         $digits = preg_replace('/^8(?=\d{10}$)/', '7', preg_replace('/\D/', '', $login));
-        $user = User::where('phone', "+$digits")->orWhere('email', $login)->first();
+        $user = str_contains($login, '@')
+            ? User::where('email', $login)->first()
+            : User::where('phone', "+$digits")->first();
 
         if (!$user || !Hash::check((string) $request->input('password'), $user->password)) {
             return response()->json(['message' => 'Неверный телефон или пароль'], 401);
@@ -90,7 +92,11 @@ class AdminController extends ApiController
 
     public function destroy(string $resource, int $id)
     {
-        $this->engine($resource, 'delete')->remove($id);
+        try {
+            $this->engine($resource, 'delete')->remove($id);
+        } catch (AdminError $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->json([]);
     }

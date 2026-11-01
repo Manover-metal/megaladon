@@ -13,7 +13,6 @@ use App\Models\OrderCategory;
 use App\Models\OrderOffer;
 use App\Models\Rating;
 use App\Models\Report;
-use App\Models\ServiceType;
 use App\Models\Setting;
 use App\Models\Store;
 use App\Models\StoreContacts;
@@ -41,7 +40,8 @@ use Illuminate\Support\Facades\DB;
  *  fields      имя => тип ('text', 'number', 'relation', 'select', 'boolean',
  *              'date', 'password', 'image', 'multiselect', 'readonly'); '!' — обязательное
  *  create/edit/delete  false — операция запрещена
- *  fieldOptions, listExtra, extra, formValues, beforeSave, afterSave, action — хуки
+ *  tree        true — список деревом (модель с App\Models\CategoryTree), без пагинации
+ *  fieldOptions, listExtra, extra, formValues, beforeSave, afterSave, beforeDelete, action — хуки
  */
 class Resources
 {
@@ -109,6 +109,33 @@ class Resources
 
         $push = fn () => app(PushService::class);
 
+        // Категории — деревья любой глубины (App\Models\CategoryTree). Родитель
+        // выбирается из всех с полным путём; удалить можно только пустую.
+        $path = fn (string $model) => [$model, fn (Model $c) => $model::path($c->id) ?? $c->{$model::LABEL}];
+        $category = fn (string $model, array $usedBy) => [
+            'model' => $model,
+            'tree' => true,
+            'search' => [$model::LABEL],
+            'relations' => ['parent_id' => $path($model)],
+            'fields' => [$model::LABEL => 'text!', 'parent_id' => 'relation'],
+            'beforeSave' => function (Model $c, array &$data) use ($model) {
+                $data['parent_id'] ??= 0;
+                if ($c->exists && in_array((int) $data['parent_id'], $model::descendantIds($c->id))) {
+                    throw new AdminError('Нельзя вложить категорию в саму себя или в её подкатегорию');
+                }
+            },
+            'beforeDelete' => function (Model $c) use ($model, $usedBy) {
+                if ($model::where('parent_id', $c->id)->exists()) {
+                    throw new AdminError('Сначала удалите или перенесите подкатегории');
+                }
+                foreach ($usedBy as $what => $used) {
+                    if ($used($c->id)) {
+                        throw new AdminError("Категория используется: $what");
+                    }
+                }
+            },
+        ];
+
         return [
             'user' => [
                 'model' => User::class,
@@ -138,19 +165,26 @@ class Resources
             'executor' => [
                 'model' => Executor::class,
                 'search' => ['name', 'bin', 'full_address'],
-                'relations' => ['user_id' => $user, 'service' => [ServiceType::class, 'name'], 'services' => [ServiceType::class, 'name']],
+                'relations' => ['user_id' => $user, 'service' => $path(OrderCategory::class), 'services' => $path(OrderCategory::class)],
                 'filters' => [
                     'user_id' => 'eq',
-                    'service' => fn (Builder $q, string $v) => $q->whereHas('services', fn ($s) => $s->where('service_types.id', (int) $v)),
+                    'service' => fn (Builder $q, string $v) => $q->whereHas('services', fn ($s) => $s->whereIn('order_categories.id', OrderCategory::descendantIds((int) $v))),
                     'subscribed' => $subscribed,
                     'created_at' => 'daterange',
                 ],
                 'fields' => [
                     'user_id' => 'relation!', 'name' => 'text!', 'description' => 'text', 'services' => 'multiselect',
-                    'bin' => 'text', 'full_address' => 'text!', 'lat' => 'number!', 'lon' => 'number!', 'rating' => 'number',
+                    'bin' => 'text', 'full_address' => 'text!', 'rating' => 'number',
                 ],
-                'extra' => fn (Executor $e) => ['services' => $e->services()->pluck('name')->all()],
-                'formValues' => fn (Executor $e) => ['services' => $e->services()->pluck('service_types.id')->map('strval')->all()],
+                'extra' => fn (Executor $e) => ['services' => $e->services()->pluck('title')->all()],
+                'formValues' => fn (Executor $e) => ['services' => $e->services()->pluck('order_categories.id')->map('strval')->all()],
+                'beforeSave' => function (Executor $e, array &$data, array $raw) {
+                    foreach ($raw['services'] ?? [] as $id) {
+                        if (!OrderCategory::isLeaf($id)) {
+                            throw new AdminError('Услуги: выберите конечные категории, без вложенных');
+                        }
+                    }
+                },
                 'afterSave' => fn (Executor $e, array $raw) => $e->services()->sync($raw['services'] ?? []),
             ],
 
@@ -161,18 +195,11 @@ class Resources
                 'filters' => ['user_id' => 'eq', 'city_id' => 'eq', 'subscribed' => $subscribed, 'created_at' => 'daterange'],
                 'fields' => [
                     'user_id' => 'relation!', 'city_id' => 'relation!', 'name' => 'text!', 'bin' => 'text!',
-                    'full_address' => 'text!', 'lat' => 'number', 'lon' => 'number', 'rating' => 'number',
+                    'full_address' => 'text!', 'rating' => 'number',
                 ],
                 'extra' => fn (Store $s) => ['contacts' => StoreContacts::where('store_id', $s->id)->get()->map(
                     fn ($c) => match ($c->type) { 'site' => "Сайт: $c->value", 'email' => "Email: $c->value", default => ($c->contact_name ?? '') . " - $c->value" }
                 )->all()],
-            ],
-
-            'service-type' => [
-                'model' => ServiceType::class,
-                'search' => ['name'], 'defaultSort' => ['name', 'asc'],
-                'filters' => ['created_at' => 'daterange'],
-                'fields' => ['name' => 'text!'],
             ],
 
             'rating' => [
@@ -223,15 +250,35 @@ class Resources
                 'search' => ['title', 'additional_phone'],
                 // На проверке — сверху.
                 'defaultSort' => ['status', 'asc'],
-                'relations' => ['user_id' => $user, 'category_id' => [AdCategory::class, 'name'], 'city_id' => $city],
-                'filters' => ['status' => 'eq', 'type' => 'eq', 'category_id' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'created_at' => 'daterange'],
+                // category_id ведёт в дерево по типу (Advert::categoryModel), поэтому
+                // в форме два поля-выбора: ad_category_id и service_category_id.
+                'relations' => [
+                    'user_id' => $user, 'city_id' => $city,
+                    'ad_category_id' => $path(AdCategory::class), 'service_category_id' => $path(OrderCategory::class),
+                ],
+                'filters' => [
+                    'status' => 'eq', 'type' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'created_at' => 'daterange',
+                    'ad_category_id' => fn (Builder $q, string $v) => $q->where('type', '!=', Advert::TYPE_SERVICE)->whereIn('category_id', AdCategory::descendantIds((int) $v)),
+                    'service_category_id' => fn (Builder $q, string $v) => $q->where('type', Advert::TYPE_SERVICE)->whereIn('category_id', OrderCategory::descendantIds((int) $v)),
+                ],
                 'fields' => [
                     'user_id' => 'relation!', 'type' => 'select!', 'title' => 'text!', 'description' => 'text', 'price' => 'number',
-                    'category_id' => 'relation!', 'city_id' => 'relation!', 'additional_phone' => 'text', 'status' => 'select!', 'reject_reason' => 'text',
+                    'ad_category_id' => 'relation', 'service_category_id' => 'relation',
+                    'city_id' => 'relation!', 'additional_phone' => 'text', 'status' => 'select!', 'reject_reason' => 'text',
                 ],
+                'listExtra' => fn (Collection $rows) => ['category' => $rows->mapWithKeys(fn (Advert $a) => [
+                    (string) $a->id => Advert::categoryModel($a->type)::path((int) $a->category_id) ?? '',
+                ])->all()],
+                'formValues' => fn (Advert $a) => [($a->type === Advert::TYPE_SERVICE ? 'service' : 'ad') . '_category_id' => (string) $a->category_id],
                 'beforeSave' => function (Advert $a, array &$data) {
                     $data['price'] ??= 0;
                     $data['status'] ??= Advert::STATUS_MODERATE;
+                    $id = $data[$data['type'] === Advert::TYPE_SERVICE ? 'service_category_id' : 'ad_category_id'] ?? null;
+                    unset($data['ad_category_id'], $data['service_category_id']);
+                    if (!$id || !Advert::categoryModel($data['type'])::isLeaf($id)) {
+                        throw new AdminError('Выберите конечную категорию ' . ($data['type'] === Advert::TYPE_SERVICE ? 'услуг' : 'объявлений'));
+                    }
+                    $data['category_id'] = $id;
                 },
                 // Автор получает пуш, как при модерации заказа (OrderActivatedListener).
                 'action' => function (string $key, Advert $ad, string $input) use ($push) {
@@ -250,19 +297,9 @@ class Resources
                 },
             ],
 
-            'ad-category' => [
-                'model' => AdCategory::class,
-                'search' => ['name'], 'defaultSort' => ['name', 'asc'],
-                'relations' => ['parent_id' => [AdCategory::class, 'name', ['parent_id' => 0]]],
-                'filters' => [
-                    'level' => fn (Builder $q, string $v) => $q->where('parent_id', $v === 'root' ? '=' : '!=', 0),
-                    'parent_id' => 'eq',
-                ],
-                'fields' => ['name' => 'text!', 'parent_id' => 'relation'],
-                'beforeSave' => function (AdCategory $c, array &$data) {
-                    $data['parent_id'] ??= 0;
-                },
-            ],
+            'ad-category' => $category(AdCategory::class, [
+                'объявления' => fn (int $id) => Advert::where('type', '!=', Advert::TYPE_SERVICE)->where('category_id', $id)->exists(),
+            ]),
 
             'subscription' => [
                 'model' => Subscription::class,
@@ -309,30 +346,21 @@ class Resources
                 },
             ],
 
-            'order-category' => [
-                'model' => OrderCategory::class,
-                'search' => ['title'], 'defaultSort' => ['title', 'asc'],
-                'relations' => ['parent_id' => [OrderCategory::class, 'title', ['parent_id' => 0]]],
-                'filters' => [
-                    'level' => fn (Builder $q, string $v) => $v === 'root'
-                        ? $q->where(fn ($w) => $w->where('parent_id', 0)->orWhereNull('parent_id'))
-                        : $q->where('parent_id', '>', 0),
-                    'parent_id' => 'eq',
-                ],
-                'fields' => ['title' => 'text!', 'parent_id' => 'relation'],
-                'beforeSave' => function (OrderCategory $c, array &$data) {
-                    $data['parent_id'] ??= 0;
-                },
-            ],
+            'order-category' => $category(OrderCategory::class, [
+                'заказы' => fn (int $id) => Order::where('category_id', $id)->exists(),
+                'исполнители' => fn (int $id) => DB::table('executor_service_types')->where('order_category_id', $id)->exists(),
+                'объявления-услуги' => fn (int $id) => Advert::where('type', Advert::TYPE_SERVICE)->where('category_id', $id)->exists(),
+            ]),
 
             // Статус меняется формой; переход «на проверке → активный» ловит
             // OrderObserver и шлёт автору пуш.
             'order' => [
                 'model' => Order::class,
                 'search' => ['title'],
-                'relations' => ['user_id' => $user, 'category_id' => [OrderCategory::class, 'title'], 'city_id' => $city, 'executor_id' => [Executor::class, 'name']],
+                'relations' => ['user_id' => $user, 'category_id' => $path(OrderCategory::class), 'city_id' => $city, 'executor_id' => [Executor::class, 'name']],
                 'filters' => [
-                    'status' => 'eq', 'category_id' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'executor_id' => 'eq',
+                    'status' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'executor_id' => 'eq',
+                    'category_id' => fn (Builder $q, string $v) => $q->whereIn('category_id', OrderCategory::descendantIds((int) $v)),
                     'has_executor' => fn (Builder $q, string $v) => $v === 'yes'
                         ? $q->where('executor_id', '>', 0)
                         : $q->where(fn ($w) => $w->whereNull('executor_id')->orWhere('executor_id', 0)),
@@ -343,6 +371,11 @@ class Resources
                     'title' => 'text!', 'description' => 'text', 'price_recommended' => 'number', 'price_max' => 'number', 'execution_days' => 'number',
                     'category_id' => 'relation!', 'status' => 'select!', 'user_id' => 'relation!', 'city_id' => 'relation!', 'executor_id' => 'relation',
                 ],
+                'beforeSave' => function (Order $o, array &$data) {
+                    if (!OrderCategory::isLeaf($data['category_id'])) {
+                        throw new AdminError('Выберите конечную категорию, без вложенных');
+                    }
+                },
             ],
 
             'order-offer' => [
