@@ -85,6 +85,7 @@ Route::group(['guard' => 'api'], function () {
     Route::group(['prefix' => 'invoice', 'middleware' => 'api'], function () {
         Route::post('/executor/create', [InvoiceController::class, 'executorCreate']);
         Route::post('/store/create', [InvoiceController::class, 'storeCreate']);
+        Route::post('/apple/verify', [InvoiceController::class, 'appleVerify']);
         Route::post('/{id}/paid', [InvoiceController::class, 'paid']);
     });
 
