@@ -58,11 +58,20 @@ class AuthService extends BaseService
 
     public function register(array $data) : array
     {
-        if ($this->userRepo->getUserByPhone($data['phone'])) {
+        $user = $this->userRepo->getUserByPhone($data['phone']);
+
+        if ($user?->is_phone_confirmed) {
             return $this->errValidate(__('account.phone_exists'));
         }
 
-        $user = $this->userRepo->store($data);
+        // Номер есть, но SMS не подтверждён — человек бросил регистрацию на
+        // шаге кода. Чужой аккаунт так не захватить: владельцем станет тот,
+        // кто введёт код из SMS. Пароль хэширует мутатор User.
+        if ($user) {
+            $user->fill($data)->save();
+        } else {
+            $user = $this->userRepo->store($data);
+        }
         $code = (new PhoneConfirmationService())->sendCode($user, $data['phone']);
 
         return $this->result([

@@ -30,9 +30,10 @@ class RegisterRequest extends FormRequest
                 'required',
                 'string',
                 'starts_with:+',
-                // Уникальность только среди активных: soft-deleted (deleted_at)
-                // не блокируют повторную регистрацию на тот же номер.
-                Rule::unique('users', 'phone')->whereNull('deleted_at'),
+                // Уникальность только среди активных и подтверждённых: soft-deleted
+                // и не прошедшие SMS-подтверждение не блокируют повторную
+                // регистрацию — AuthService::register() перезапишет такого.
+                Rule::unique('users', 'phone')->whereNull('deleted_at')->where('is_phone_confirmed', true),
             ],
             'password' => ['required', 'string', 'min:8', 'max:32', 'confirmed'],
             'city_id' => ['required', 'exists:cities,id'],

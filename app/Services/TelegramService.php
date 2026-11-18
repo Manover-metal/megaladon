@@ -16,6 +16,7 @@ class TelegramService
     {
         $token = config('telegram.bot_token');
         if (empty($token)) {
+            Log::error(__METHOD__ . ": $method — TELEGRAM_BOT_TOKEN не задан");
             return null;
         }
 
