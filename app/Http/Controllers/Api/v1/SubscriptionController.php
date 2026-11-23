@@ -14,6 +14,12 @@ class SubscriptionController extends ApiController
         $this->service = new SubscriptionService();
     }
 
+    /** Настройки, от которых зависит интерфейс приложения. */
+    public function appConfig()
+    {
+        return response()->json(['subscriptions_enabled' => \App\Models\Subscription::enabled()]);
+    }
+
     public function index(IndexSubscriptionRequest $request)
     {
         $params = $request->validated();

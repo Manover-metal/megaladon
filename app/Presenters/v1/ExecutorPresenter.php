@@ -25,7 +25,7 @@ class ExecutorPresenter extends BasePresenter
             'count_orders' => $this->user ? $this->user->countCompletedOrders() : null,
             // Чат заводится по id пользователя, а не исполнителя.
             'user_id' => $this->user ? $this->user->id : null,
-            'subscription_expired_at' => is_null($this->activeInvoice()) ? null : strtotime($this->activeInvoice()->expired_at),
+            'subscription_expired_at' => $this->accessExpiresAt(),
         ];
     }
 

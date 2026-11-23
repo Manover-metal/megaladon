@@ -55,6 +55,22 @@ class Store extends Model
         return $this->morphMany(Invoice::class, 'invoiceable');
     }
 
+    /** Можно пользоваться платными функциями: подписки выключены или оплачено. */
+    public function hasAccess(): bool
+    {
+        return !Subscription::enabled() || !is_null($this->activeInvoice());
+    }
+
+    /** subscription_expired_at для приложения (unix-время), null — доступа нет. */
+    public function accessExpiresAt(): ?int
+    {
+        if (!Subscription::enabled()) {
+            return strtotime(Subscription::UNLIMITED_UNTIL);
+        }
+        $invoice = $this->activeInvoice();
+        return is_null($invoice) ? null : strtotime($invoice->expired_at);
+    }
+
     public function activeInvoice()
     {
         return $this->invoices()
@@ -68,6 +84,9 @@ class Store extends Model
     // ни в каталоге металлопроката, ни карточкой по прямой ссылке.
     public function scopeHasActiveSubscription($query)
     {
+        if (!Subscription::enabled()) {
+            return $query;
+        }
         return $query->whereHas('invoices', function ($q) {
             $q->where('status', Invoice::STATUS_PAID)
                 ->whereDate('expired_at', '>', Carbon::now());

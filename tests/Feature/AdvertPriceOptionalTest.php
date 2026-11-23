@@ -7,7 +7,6 @@ use App\Models\Advert;
 use App\Models\City;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -24,8 +23,9 @@ class AdvertPriceOptionalTest extends TestCase
         return User::create([
             'name' => 'Test',
             'phone' => '+77001234567',
-            'password' => Hash::make('secret123'),
+            'password' => 'secret123',
             'is_phone_confirmed' => true,
+            'city_id' => City::firstOrCreate(['name' => 'Алматы'])->id,
         ]);
     }
 
@@ -36,7 +36,7 @@ class AdvertPriceOptionalTest extends TestCase
             'title' => 'Токарные работы',
             'description' => 'Описание',
             'category_id' => AdCategory::create(['name' => 'Металлообработка'])->id,
-            'city_id' => City::create(['name' => 'Алматы'])->id,
+            'city_id' => City::firstOrCreate(['name' => 'Алматы'])->id,
         ], $extra);
     }
 

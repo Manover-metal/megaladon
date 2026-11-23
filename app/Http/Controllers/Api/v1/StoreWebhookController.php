@@ -47,6 +47,7 @@ class StoreWebhookController extends Controller
                 (string) $transaction['transactionId'],
                 Carbon::createFromTimestampMs($transaction['expiresDate']),
                 $transaction,
+                self::appleTrial($transaction),
             );
         } elseif ($transaction && in_array($type, ['REFUND', 'REVOKE'], true)) {
             $this->payments->refunded((string) $transaction['transactionId']);
@@ -97,11 +98,35 @@ class StoreWebhookController extends Controller
 
         $uuid = $subscription['externalAccountIdentifiers']['obfuscatedExternalAccountId'] ?? null;
         if ($uuid) {
-            $this->payments->paid($uuid, $orderId, Carbon::parse($line['expiryTime']), $subscription);
+            $this->payments->paid($uuid, $orderId, Carbon::parse($line['expiryTime']), $subscription,
+                $type === self::GOOGLE_PURCHASED && self::googleTrial($line));
         } else {
             Log::warning('Google webhook: purchase without invoice uuid', ['orderId' => $orderId]);
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Первая транзакция бесплатного вводного предложения: offerType 1 —
+     * introductory. offerDiscountType есть в уведомлениях с 2023 года, price
+     * (в тысячных) — запасной признак.
+     */
+    private static function appleTrial(array $transaction): bool
+    {
+        return ($transaction['offerType'] ?? null) === 1
+            && (($transaction['offerDiscountType'] ?? null) === 'FREE_TRIAL'
+                || ($transaction['price'] ?? null) === 0);
+    }
+
+    /**
+     * Покупка в бесплатной фазе: offerPhase.freeTrial в subscriptionsv2, либо
+     * тег предложения free-trial из Play Console (на случай, если offerPhase
+     * не пришёл).
+     */
+    private static function googleTrial(array $line): bool
+    {
+        return isset($line['offerPhase']['freeTrial'])
+            || in_array('free-trial', $line['offerDetails']['offerTags'] ?? [], true);
     }
 }

@@ -9,7 +9,7 @@ class SubscriptionPaidEvent
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public int $user_id, public string $expired_at)
+    public function __construct(public int $user_id, public string $expired_at, public bool $is_trial = false)
     {
     }
 }

@@ -304,7 +304,7 @@ class Resources
             'subscription' => [
                 'model' => Subscription::class,
                 'filters' => ['type' => 'eq'],
-                'fields' => ['type' => 'select!', 'validity' => 'number!', 'price' => 'number!', 'apple_product_id' => 'text', 'google_product_id' => 'text'],
+                'fields' => ['type' => 'select!', 'validity' => 'number!', 'price' => 'number!', 'trial_months' => 'number', 'apple_product_id' => 'text', 'google_product_id' => 'text'],
             ],
 
             'invoice' => [
@@ -312,7 +312,7 @@ class Resources
                 'create' => false,
                 'relations' => ['subscription_id' => [Subscription::class, fn (Subscription $s) => '(' . ($s->type === 'executor' ? 'Исполнитель' : 'Магазин') . ") $s->validity мес. $s->price тг."]],
                 'filters' => [
-                    'status' => 'eq', 'payment_method' => 'eq', 'invoiceable_type' => 'eq', 'subscription_id' => 'eq',
+                    'status' => 'eq', 'payment_method' => 'eq', 'invoiceable_type' => 'eq', 'subscription_id' => 'eq', 'is_trial' => 'boolean',
                     'active' => fn (Builder $q, string $v) => $v === 'yes'
                         ? $q->where('status', Invoice::STATUS_PAID)->where('expired_at', '>', $today())
                         : $q->where(fn ($w) => $w->where('status', '!=', Invoice::STATUS_PAID)->orWhereNull('expired_at')->orWhere('expired_at', '<=', $today())),

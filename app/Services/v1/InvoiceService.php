@@ -24,6 +24,12 @@ class InvoiceService extends BaseService
 
     public function executorCreate(User $user, array $data)
     {
+        // Подписки выключены — доступ и так бесплатный. Старые версии
+        // приложения ещё показывают экран подписки: не даём оплатить зря.
+        if (!Subscription::enabled()) {
+            return $this->errFobidden(__('invoice.subscriptions_disabled'));
+        }
+
         $executor = $user->executor;
         if (!$executor) {
             return $this->errNotFound(__('invoice.executor_not_found'));
@@ -65,6 +71,12 @@ class InvoiceService extends BaseService
 
     public function storeCreate(User $user, array $data)
     {
+        // Подписки выключены — доступ и так бесплатный. Старые версии
+        // приложения ещё показывают экран подписки: не даём оплатить зря.
+        if (!Subscription::enabled()) {
+            return $this->errFobidden(__('invoice.subscriptions_disabled'));
+        }
+
         $store = $user->store;
         if (!$store) {
             return $this->errNotFound(__('invoice.store_not_found'));

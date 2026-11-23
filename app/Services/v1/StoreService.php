@@ -68,7 +68,7 @@ class StoreService extends BaseService
 
         // Магазин без активной подписки скрыт: отдаём тот же 404, что и для
         // несуществующего, чтобы не раскрывать факт просроченной подписки.
-        if (is_null($store) || is_null($store->activeInvoice())) {
+        if (is_null($store) || !$store->hasAccess()) {
             return $this->errNotFound(__('store.not_found'));
         }
 
@@ -85,7 +85,7 @@ class StoreService extends BaseService
         $user = $this->apiAuthUser();
         $isOwner = $store && $user && (int) $store->user_id === (int) $user->id;
 
-        if (is_null($store) || (!$isOwner && is_null($store->activeInvoice()))) {
+        if (is_null($store) || (!$isOwner && !$store->hasAccess())) {
             return $this->errNotFound(__('store.not_found'));
         }
 
@@ -191,7 +191,7 @@ class StoreService extends BaseService
     public function rateStore(int $storeId, array $data)
     {
         $store = Store::find($storeId);
-        if (is_null($store) || is_null($store->activeInvoice())) {
+        if (is_null($store) || !$store->hasAccess()) {
             return $this->errNotFound(__('store.not_found'));
         }
 

@@ -19,10 +19,8 @@ class StorePresenter extends BasePresenter
     // стоило бы лишнего запроса на каждый магазин, а чужим дата ни к чему.
     public function edited()
     {
-        $invoice = $this->activeInvoice();
-
         return array_merge($this->list(), [
-            'subscription_expired_at' => is_null($invoice) ? null : strtotime($invoice->expired_at),
+            'subscription_expired_at' => $this->accessExpiresAt(),
         ]);
     }
 

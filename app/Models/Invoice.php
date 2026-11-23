@@ -27,6 +27,7 @@ class Invoice extends Model
         'payment_method',
         'uuid',
         'store_transaction_id',
+        'is_trial',
     ];
 
     // Дефолт колонки БД после create() в модель не попадает.

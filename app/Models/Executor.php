@@ -39,6 +39,22 @@ class Executor extends Model
         return $this->morphMany(Invoice::class, 'invoiceable');
     }
 
+    /** Можно пользоваться платными функциями: подписки выключены или оплачено. */
+    public function hasAccess(): bool
+    {
+        return !Subscription::enabled() || !is_null($this->activeInvoice());
+    }
+
+    /** subscription_expired_at для приложения (unix-время), null — доступа нет. */
+    public function accessExpiresAt(): ?int
+    {
+        if (!Subscription::enabled()) {
+            return strtotime(Subscription::UNLIMITED_UNTIL);
+        }
+        $invoice = $this->activeInvoice();
+        return is_null($invoice) ? null : strtotime($invoice->expired_at);
+    }
+
     public function activeInvoice()
     {
         return $this->invoices()

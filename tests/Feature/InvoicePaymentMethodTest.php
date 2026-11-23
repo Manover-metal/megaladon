@@ -21,6 +21,11 @@ class InvoicePaymentMethodTest extends TestCase
         parent::setUp();
         $this->user = $this->makeUser('+77001110000');
         $this->makeExecutor($this->user);
+        // Тесты — про логику по платформам, поэтому стартуем с включённой
+        // ручной оплатой (после миграции флага подписок она выключена).
+        Setting::whereIn('key', ['manual_payment_ios', 'manual_payment_android'])->update(['value' => '1']);
+        // Заявки на подписку принимаются только при включённых подписках.
+        Setting::where('key', 'subscriptions_enabled')->update(['value' => '1']);
     }
 
     private function createInvoice(array $body)

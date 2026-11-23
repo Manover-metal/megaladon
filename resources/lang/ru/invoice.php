@@ -11,4 +11,5 @@ return [
     'transaction_not_paid'           => 'Транзакция не была оплачена',
     'store_product_missing'          => 'Этот тариф нельзя оплатить через магазин приложений',
     'manual_payment_disabled'        => 'Оплата через менеджера сейчас недоступна',
+    'subscriptions_disabled'         => 'Сейчас все функции доступны бесплатно',
 ];

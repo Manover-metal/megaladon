@@ -137,7 +137,7 @@ class AdvertService extends BaseService
         if (is_null($executor) && is_null($store)) {
             return $this->errFobidden(__('advert.service_forbidden'));
         }
-        if (($executor && $executor->activeInvoice()) || ($store && $store->activeInvoice())) {
+        if (($executor && $executor->hasAccess()) || ($store && $store->hasAccess())) {
             return $this->ok();
         }
 

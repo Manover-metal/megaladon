@@ -19,18 +19,20 @@ class PhoneConfirmationService extends BaseService
     /**
      * Генерирует код, сохраняет его и пробует отправить SMS.
      *
-     * @return string|null Код возвращается наружу только когда SMS реально не
-     *                     ушла (отладочный режим или сбой шлюза) — иначе клиент
-     *                     получил бы код в ответе API в обход подтверждения.
+     * @return string|null Код наружу — только в отладочном режиме (NO_SEND_SMS,
+     *                     код там постоянный). При сбое шлюза — null: раньше код
+     *                     уходил в ответ API, и чужой аккаунт можно было забрать,
+     *                     зная только номер (сброс пароля в момент сбоя SMSC
+     *                     или после выжигания баланса). Сбой пишет в лог SmscService.
      */
     public function sendCode(User $user, $phone)
     {
         $code = $this->generateCode();
         $this->pcRepo->store($user, $phone, $code);
 
-        $sent = (new SmscService())->send($phone, __('sms.confirmation_code', ['code' => $code]));
+        (new SmscService())->send($phone, __('sms.confirmation_code', ['code' => $code]));
 
-        return $sent ? null : $code;
+        return $this->smsConfig['no_send_sms'] ? $code : null;
     }
 
     private function generateCode(): string

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Invoice;
 use App\Models\Subscription;
+use App\Services\Billing\AppleJws;
 use Carbon\Carbon;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,17 @@ class AppleWebhookTest extends TestCase
         parent::setUp();
         Notification::fake();
         config(['billing.apple.bundle_id' => 'com.bangertstudio.manover']);
+        // Подпись Apple в тесте не подделать: проверку цепочки сертификатов
+        // покрывает сам AppleJws, здесь — только разбор уведомлений.
+        $this->app->instance(AppleJws::class, new class extends AppleJws {
+            public function decode($jws): ?array
+            {
+                if (!is_string($jws) || substr_count($jws, '.') !== 2) {
+                    return null;
+                }
+                return json_decode(JWT::urlsafeB64Decode(explode('.', $jws)[1]), true);
+            }
+        });
 
         $executor = $this->makeExecutor($this->makeUser('+77001110000'));
         $plan = $this->makePlan(Subscription::EXECUTOR, 5000, ['apple_product_id' => 'executor_1m']);
@@ -60,6 +72,30 @@ class AppleWebhookTest extends TestCase
             'appAccountToken' => $this->request->uuid,
             'expiresDate' => Carbon::parse($expires)->getTimestampMs(),
         ];
+    }
+
+    /** Бесплатное вводное предложение: доступ до конца пробного периода, счёт помечен. */
+    public function test_free_trial_is_marked_and_conversion_is_paid(): void
+    {
+        $trial = $this->transaction('tx-1', '2027-02-24 10:00:00') + ['offerType' => 1, 'offerDiscountType' => 'FREE_TRIAL', 'price' => 0];
+        $this->postJson('/api/webhooks/apple', $this->notification('SUBSCRIBED', $trial))->assertOk();
+
+        $invoice = $this->request->fresh();
+        $this->assertSame(Invoice::STATUS_PAID, $invoice->status);
+        $this->assertTrue((bool) $invoice->is_trial);
+        $this->assertSame('2027-02-25', substr($invoice->expired_at, 0, 10));
+
+        // Пробный период кончился, Apple списала оплату.
+        $paid = $this->transaction('tx-2', '2027-03-24 10:00:00') + ['price' => 5000000];
+        $this->postJson('/api/webhooks/apple', $this->notification('DID_RENEW', $paid))->assertOk();
+        $this->assertFalse((bool) Invoice::where('store_transaction_id', 'tx-2')->value('is_trial'));
+    }
+
+    public function test_paid_intro_offer_is_not_trial(): void
+    {
+        $intro = $this->transaction('tx-1') + ['offerType' => 1, 'offerDiscountType' => 'PAY_AS_YOU_GO', 'price' => 2500000];
+        $this->postJson('/api/webhooks/apple', $this->notification('SUBSCRIBED', $intro))->assertOk();
+        $this->assertFalse((bool) $this->request->fresh()->is_trial);
     }
 
     public function test_subscribed_marks_invoice_paid(): void
@@ -103,13 +139,15 @@ class AppleWebhookTest extends TestCase
         $this->postJson('/api/webhooks/apple', $this->notification('TEST', null))->assertOk();
     }
 
-    public function test_missing_payload_returns_400(): void
+    // Неподписанное или битое уведомление — 401, как отвечает контроллер
+    // на любой JWS, не прошедший проверку Apple.
+    public function test_missing_payload_returns_401(): void
     {
-        $this->postJson('/api/webhooks/apple', [])->assertStatus(400);
+        $this->postJson('/api/webhooks/apple', [])->assertStatus(401);
     }
 
-    public function test_malformed_payload_returns_400(): void
+    public function test_malformed_payload_returns_401(): void
     {
-        $this->postJson('/api/webhooks/apple', ['signedPayload' => 'not-a-jws'])->assertStatus(400);
+        $this->postJson('/api/webhooks/apple', ['signedPayload' => 'not-a-jws'])->assertStatus(401);
     }
 }

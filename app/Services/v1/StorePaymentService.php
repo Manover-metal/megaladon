@@ -18,9 +18,9 @@ class StorePaymentService
      * Первая оплата закрывает заявку, следующие (продления) — новый
      * оплаченный инвойс у того же владельца.
      */
-    public function paid(string $uuid, string $transactionId, Carbon $expiresAt, array $meta): void
+    public function paid(string $uuid, string $transactionId, Carbon $expiresAt, array $meta, bool $isTrial = false): void
     {
-        $paid = DB::transaction(function () use ($uuid, $transactionId, $expiresAt, $meta) {
+        $paid = DB::transaction(function () use ($uuid, $transactionId, $expiresAt, $meta, $isTrial) {
             $origin = Invoice::where('uuid', $uuid)->lockForUpdate()->first();
             // Владельца могли удалить — магазин повторял бы вебхук вечно, отвечаем 200.
             if (!$origin || !$origin->invoiceable) {
@@ -40,6 +40,9 @@ class StorePaymentService
                 // округляем вверх, чтобы не отрезать последний оплаченный день.
                 'expired_at' => $expiresAt->copy()->ceilDay()->toDateString(),
                 'meta' => json_encode($meta),
+                // Бесплатный период магазина: денег нет, доступ до expiresAt,
+                // дальше магазин сам спишет оплату и пришлёт продление.
+                'is_trial' => $isTrial,
             ];
 
             if ($origin->status === Invoice::STATUS_CREATED) {
@@ -51,7 +54,7 @@ class StorePaymentService
                 ]);
             }
 
-            return [$origin->invoiceable->user_id, $attributes['expired_at']];
+            return [$origin->invoiceable->user_id, $attributes['expired_at'], $isTrial];
         });
 
         if ($paid) {

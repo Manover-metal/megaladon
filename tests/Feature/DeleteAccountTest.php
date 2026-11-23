@@ -31,7 +31,7 @@ class DeleteAccountTest extends TestCase
         $response = $this->withToken($token)
             ->deleteJson('/api/user/delete-account', ['password' => 'secret123']);
 
-        $response->assertStatus(200)->assertJsonPath('data.success', true);
+        $response->assertStatus(200)->assertJsonPath('success', true);
         $this->assertSoftDeleted('users', ['id' => $user->id]);
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }

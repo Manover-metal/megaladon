@@ -133,6 +133,44 @@ class GoogleWebhookTest extends TestCase
         $this->assertSame(Invoice::STATUS_CANCELED, $this->request->fresh()->status);
     }
 
+    /** Покупка в бесплатной фазе: доступ до конца пробного периода, счёт помечен. */
+    public function test_trial_purchase_is_marked_and_conversion_is_paid(): void
+    {
+        $trial = $this->googleSubscription('GPA.1');
+        $trial['lineItems'][0]['offerPhase'] = ['freeTrial' => (object) []];
+        $trial['lineItems'][0]['expiryTime'] = '2027-02-24T10:00:00Z';
+        $renewed = $this->googleSubscription('GPA.1..0', 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED');
+        $renewed['lineItems'][0]['offerPhase'] = ['basePrice' => (object) []];
+        $this->fakeGoogle($trial, $renewed);
+
+        $this->push($this->subscriptionMessage(4))->assertOk();
+        $invoice = $this->request->fresh();
+        $this->assertSame(Invoice::STATUS_PAID, $invoice->status);
+        $this->assertTrue((bool) $invoice->is_trial);
+        $this->assertSame('2027-02-25', substr($invoice->expired_at, 0, 10));
+
+        // Пробный период кончился, магазин списал оплату — обычный счёт.
+        $this->push($this->subscriptionMessage(2))->assertOk();
+        $this->assertFalse((bool) Invoice::where('store_transaction_id', 'GPA.1..0')->value('is_trial'));
+    }
+
+    public function test_trial_offer_tag_marks_trial_without_offer_phase(): void
+    {
+        $trial = $this->googleSubscription('GPA.1');
+        $trial['lineItems'][0]['offerDetails'] = ['basePlanId' => 'monthly', 'offerId' => 'trial-3m', 'offerTags' => ['free-trial']];
+        $this->fakeGoogle($trial);
+
+        $this->push($this->subscriptionMessage(4))->assertOk();
+        $this->assertTrue((bool) $this->request->fresh()->is_trial);
+    }
+
+    public function test_regular_purchase_is_not_trial(): void
+    {
+        $this->fakeGoogle($this->googleSubscription('GPA.1'));
+        $this->push($this->subscriptionMessage(4))->assertOk();
+        $this->assertFalse((bool) $this->request->fresh()->is_trial);
+    }
+
     public function test_wrong_secret_returns_404(): void
     {
         Http::fake();

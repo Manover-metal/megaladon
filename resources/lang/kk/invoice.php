@@ -11,4 +11,5 @@ return [
     'transaction_not_paid'           => 'Транзакция төленбеген',
     'store_product_missing'          => 'Бұл тарифті қолданбалар дүкені арқылы төлеуге болмайды',
     'manual_payment_disabled'        => 'Менеджер арқылы төлеу қазір қолжетімсіз',
+    'subscriptions_disabled'         => 'Қазір барлық мүмкіндіктер тегін',
 ];

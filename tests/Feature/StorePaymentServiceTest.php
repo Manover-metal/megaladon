@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Executor;
 use App\Models\Invoice;
+use App\Models\Setting;
 use App\Models\Subscription;
 use App\Notifications\FcmPushNotification;
 use App\Services\v1\StorePaymentService;
@@ -25,6 +26,8 @@ class StorePaymentServiceTest extends TestCase
         parent::setUp();
         Notification::fake();
         Carbon::setTestNow('2026-09-27 12:00:00');
+        // Пуш об оплате уходит только при включённых подписках.
+        Setting::where('key', 'subscriptions_enabled')->update(['value' => '1']);
 
         $this->executor = $this->makeExecutor($this->makeUser('+77001110000'));
         $plan = $this->makePlan(Subscription::EXECUTOR, 5000, ['apple_product_id' => 'executor_1m']);
@@ -103,6 +106,19 @@ class StorePaymentServiceTest extends TestCase
     {
         $this->service()->paid($this->request->uuid, 'tx-1', Carbon::parse('2026-10-27 14:00:00'), []);
 
-        Notification::assertSentTo($this->executor->user, FcmPushNotification::class);
+        Notification::assertSentTo($this->executor->user, FcmPushNotification::class,
+            fn (FcmPushNotification $n) => $n->toFcm($this->executor->user)->getNotification()->getTitle() === 'Подписка оплачена');
+    }
+
+    // Пробный период — не оплата: «Подписка оплачена» человек принял бы за списание.
+    public function test_trial_push_does_not_say_paid(): void
+    {
+        $this->service()->paid($this->request->uuid, 'tx-1', Carbon::parse('2027-02-24 10:00:00'), [], true);
+
+        Notification::assertSentTo($this->executor->user, FcmPushNotification::class, function (FcmPushNotification $n) {
+            $push = $n->toFcm($this->executor->user)->getNotification();
+            return $push->getTitle() === 'Пробный период начался'
+                && str_contains($push->getBody(), 'Бесплатно до 25.02.2027');
+        });
     }
 }

@@ -11,4 +11,5 @@ return [
     'transaction_not_paid'           => 'The transaction was not paid',
     'store_product_missing'          => 'This plan cannot be paid via the app store',
     'manual_payment_disabled'        => 'Payment via manager is currently unavailable',
+    'subscriptions_disabled'         => 'All features are currently free',
 ];

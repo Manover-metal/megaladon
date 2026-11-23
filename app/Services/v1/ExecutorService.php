@@ -135,7 +135,7 @@ class ExecutorService extends BaseService
         if (is_null($executor)) {
             return $this->errFobidden(__('executor.not_registered'));
         }
-        if (is_null($executor->activeInvoice())) {
+        if (!$executor->hasAccess()) {
             return $this->errPaymentRequired(__('executor.no_subscription'));
         }
 
