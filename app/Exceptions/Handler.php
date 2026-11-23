@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
@@ -56,15 +55,6 @@ class Handler extends ExceptionHandler
             }
         });
 
-        $this->renderable(function (AuthorizationException $e, Request $request) {
-            if ($request->is('api/*')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Требуется авторизация'
-                ], 403);
-            }
-        });
-
         $this->renderable(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -75,7 +65,19 @@ class Handler extends ExceptionHandler
         });
 		
 		
+        // Сюда же приходит AuthorizationException: prepareException() превращает
+        // его в AccessDeniedHttpException раньше, чем вызываются renderable.
+        // Большинство ручек не под auth:api — гостя отсекает authorize()
+        // FormRequest'а. Гость (токена нет или он мёртвый) получает 401, иначе
+        // приложение с удалённым токеном не выходит из аккаунта, а сыплет 403.
+        // Авторизованному отказу («чужой заказ», не админ) остаётся 403.
         $this->renderable(function (AccessDeniedHttpException $e, Request $request) {
+            if ($request->is('api/*') && auth('api')->guest()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Требуется авторизация'
+                ], 401);
+            }
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,

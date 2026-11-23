@@ -90,7 +90,8 @@ class UserService extends BaseService
     {
         $user = $this->apiAuthUser();
         if (!Hash::check($data['password'], $user->password)) {
-            return $this->error(401, __('user.wrong_password'));
+            // 422, не 401: приложение на любой 401 считает токен мёртвым и выходит.
+            return $this->error(422, __('user.wrong_password'));
         }
         (new PhoneConfirmationService())->sendCode($user, $data['new_phone']);
 
@@ -100,7 +101,8 @@ class UserService extends BaseService
     public function changePassword(User $user, array $data)
     {
         if (!Hash::check($data['old_password'], $user->password)) {
-            return $this->error(401, __('user.wrong_password'));
+            // 422, не 401: приложение на любой 401 считает токен мёртвым и выходит.
+            return $this->error(422, __('user.wrong_password'));
         }
 
         $this->userRepo->update($user->id, ['password' => Hash::make($data['password'])]);
@@ -111,10 +113,11 @@ class UserService extends BaseService
     public function deleteAccount(User $user, array $data)
     {
         if (!Hash::check($data['password'], $user->password)) {
-            return $this->error(401, __('user.wrong_password'));
+            // 422, не 401: приложение на любой 401 считает токен мёртвым и выходит.
+            return $this->error(422, __('user.wrong_password'));
         }
 
-        $user->tokens()->delete();
+        (new TokenService())->revokeAll($user);
         $user->delete();
 
         return $this->ok(__('user.account_deleted'));

@@ -12,7 +12,9 @@ use App\Models\UserBlock;
 use App\Observers\OrderObserver;
 use App\Observers\RatingObserver;
 use App\Services\TelegramService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Order::observe(OrderObserver::class);
         Rating::observe(RatingObserver::class);
+
+        // Sanctum 2 не знает про expires_at у токена — проверяем сами.
+        // null — вечный токен (админка).
+        Sanctum::authenticateAccessTokensUsing(fn ($token, bool $isValid) =>
+            $isValid && (is_null($token->expires_at) || Carbon::parse($token->expires_at)->isFuture()));
 
         $this->telegramEvents();
     }

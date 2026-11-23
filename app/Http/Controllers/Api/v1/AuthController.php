@@ -83,6 +83,17 @@ class AuthController extends ApiController
         return $this->result($this->authService->logout());
     }
 
+    public function refresh(\Illuminate\Http\Request $request)
+    {
+        $data = $request->validate(['refresh_token' => ['required', 'string']]);
+        return $this->result($this->authService->refresh($data['refresh_token']));
+    }
+
+    public function upgradeToken()
+    {
+        return $this->result($this->authService->upgradeToken());
+    }
+
     public function pusherLogin(PusherLoginRequest $request)
     {
         return response()->json(

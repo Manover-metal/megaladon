@@ -47,6 +47,7 @@ Route::group(['guard' => 'api'], function () {
         Route::post('/resend-code', [AuthController::class, 'resendCode']);
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/pusher-login', [AuthController::class, 'pusherLogin'])->middleware('api');
         
         Route::group(['middleware' => 'api'], function () {
@@ -54,6 +55,7 @@ Route::group(['guard' => 'api'], function () {
             Route::post('/register-executor', [AuthController::class, 'registerExecutor']);
             Route::post('/register-store', [AuthController::class, 'registerStore']);
             Route::delete('/logout', [AuthController::class, 'logout']);
+            Route::post('/upgrade-token', [AuthController::class, 'upgradeToken'])->middleware('auth:api');
         });
     });
 

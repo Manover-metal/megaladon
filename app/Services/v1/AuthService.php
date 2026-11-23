@@ -13,7 +13,6 @@ use App\Services\BaseService;
 use App\Repositories\UserRepo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Support\Str;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
@@ -48,10 +47,7 @@ class AuthService extends BaseService
             return $this->errFobidden(__('account.banned', ['reason' => $user->ban_reason ?: '—']));
         }
 
-        $token = $user->createToken('api')->plainTextToken;
-
-        return $this->result([
-            'token' => $token,
+        return $this->result((new TokenService())->issue($user) + [
             'user' => (new UserPresenter($user))->profile(),
         ]);
     }
@@ -154,10 +150,7 @@ class AuthService extends BaseService
         // Код одноразовый — гасим все выданные на номер, как в resetPassword().
         (new PhoneConfirmationRepo())->deleteByPhone($data['phone']);
         $user = $this->userRepo->getUserByPhone($data['phone']);
-        $token = $user->createToken('api')->plainTextToken;
-
-        return $this->result([
-            'token' => $token,
+        return $this->result((new TokenService())->issue($user) + [
             'user' => (new UserPresenter($user))->profile(),
         ]);
     }
@@ -218,8 +211,39 @@ class AuthService extends BaseService
         if (is_null($user)) {
             return $this->errUnauthenticated('Unauthorized');
         }
-        $user->tokens()->delete();
+        // Только токен этого устройства (и его refresh): tokens()->delete()
+        // разлогинивал пользователя заодно на всех остальных телефонах.
+        $token = $user->currentAccessToken();
+        if ($token instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            (new TokenService())->revoke($token);
+        }
         return $this->ok();
+    }
+
+    /** Ротация пары. 401 — refresh не принят, приложению пора на вход. */
+    public function refresh(string $refreshToken): array
+    {
+        $pair = (new TokenService())->refresh($refreshToken);
+        if (is_null($pair)) {
+            return $this->errUnauthenticated(__('account.refresh_invalid'));
+        }
+        return $this->result($pair);
+    }
+
+    /**
+     * Обмен вечного токена старой версии приложения на пару. Старый токен
+     * гасится. Админский токен так не обменять — у админки refresh нет.
+     */
+    public function upgradeToken(): array
+    {
+        $user = auth('api')->user();
+        $token = $user?->currentAccessToken();
+        if (!$token instanceof \Laravel\Sanctum\PersonalAccessToken || $token->name !== 'api') {
+            return $this->errUnauthenticated('Unauthorized');
+        }
+        $tokens = new TokenService();
+        $tokens->revoke($token);
+        return $this->result($tokens->issue($user));
     }
 
     public function pusherLogin(array $data)

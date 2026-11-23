@@ -54,7 +54,7 @@ class User extends Authenticatable
     public function ban(?string $reason): void
     {
         $this->forceFill(['banned_at' => now(), 'ban_reason' => $reason])->save();
-        $this->tokens()->delete();
+        (new \App\Services\v1\TokenService())->revokeAll($this);
     }
 
     public function unban(): void

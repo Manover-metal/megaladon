@@ -14,4 +14,5 @@ return [
     'password_sms_sent'   => 'An SMS with the password has been sent to the specified number',
     'password_reset_success' => 'Password has been reset successfully. Please log in with your new password.',
     'banned' => 'Your account has been banned. Reason: :reason',
+    'refresh_invalid' => 'Your session has expired, please sign in again.',
 ];

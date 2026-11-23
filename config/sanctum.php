@@ -32,6 +32,11 @@ return [
 
     'expiration' => null,
 
+    // Токены приложения (см. TokenService), в секундах. Глобальный expiration
+    // выше не трогаем: он задел бы вечные токены админки.
+    'access_ttl' => (int) env('SANCTUM_ACCESS_TTL', 3600),
+    'refresh_ttl' => (int) env('SANCTUM_REFRESH_TTL', 60 * 60 * 24 * 30),
+
     /*
     |--------------------------------------------------------------------------
     | Sanctum Middleware
