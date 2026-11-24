@@ -131,4 +131,26 @@ class SubscriptionsSwitchTest extends TestCase
         $this->assertSame(Invoice::STATUS_PAID, $request->fresh()->status);
         Notification::assertNothingSent();
     }
+
+    // Флаг виден в Админке → Настройки и переключается оттуда: строку заводит
+    // миграция, раздел показывает все настройки.
+    public function test_admin_sees_and_toggles_flag(): void
+    {
+        $admin = $this->makeUser('+77009990000');
+        $admin->forceFill(['role' => 'admin'])->save();
+        $token = $admin->createToken('admin')->plainTextToken;
+
+        $list = $this->withToken($token)->getJson('/api/admin/setting')->assertOk()->json();
+        $row = collect($list['data'] ?? $list['list'] ?? $list['rows'] ?? [])->firstWhere('key', 'subscriptions_enabled');
+        $this->assertNotNull($row, 'строки нет в списке настроек: ' . json_encode($list, JSON_UNESCAPED_UNICODE));
+        $this->assertStringContainsString('Подписки включены', $row['label']);
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->postJson("/api/admin/setting/{$row['id']}", ['value' => true])->assertOk();
+        $this->getJson('/api/app-config')->assertExactJson(['subscriptions_enabled' => true]);
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->postJson("/api/admin/setting/{$row['id']}", ['value' => false])->assertOk();
+        $this->getJson('/api/app-config')->assertExactJson(['subscriptions_enabled' => false]);
+    }
 }

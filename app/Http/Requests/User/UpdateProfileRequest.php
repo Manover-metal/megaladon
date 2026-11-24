@@ -25,6 +25,7 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255', 'min:2'],
+            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
         ];
     }
 }

@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'confirmation_code' => 'Megaladon: your confirmation code is :code',
+    'confirmation_code' => 'Manover Metal: your confirmation code is :code',
 ];

@@ -73,6 +73,7 @@ Route::group(['guard' => 'api'], function () {
         Route::get('/push-status', [UserController::class, 'pushStatus']);
         Route::post('/change-push-status', [UserController::class, 'changePushStatus']);
         Route::get('/profile', [UserController::class, 'currentProfile']);
+        Route::put('/profile', [UserController::class, 'updateProfile']);
         Route::get('/{id}', [UserController::class, 'profile']);
     });
 
