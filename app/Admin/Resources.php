@@ -13,6 +13,7 @@ use App\Models\OrderCategory;
 use App\Models\OrderOffer;
 use App\Models\Rating;
 use App\Models\Report;
+use App\Models\Service;
 use App\Models\Setting;
 use App\Models\Store;
 use App\Models\StoreContacts;
@@ -55,6 +56,7 @@ class Resources
     {
         return [
             'advert' => Advert::where('status', Advert::STATUS_MODERATE)->count(),
+            'service' => Service::where('status', Service::STATUS_MODERATE)->count(),
             'order' => Order::where('status', Order::STATUS_MODERATE)->count(),
             'support-ticket' => SupportTicket::where('status', SupportTicket::STATUS_OPEN)->count(),
             'report' => Report::where('status', Report::STATUS_OPEN)->count(),
@@ -65,7 +67,7 @@ class Resources
     public static function stats(): array
     {
         $out = [];
-        foreach (['users', 'orders', 'adverts', 'executors', 'stores'] as $t) {
+        foreach (['users', 'orders', 'adverts', 'services', 'executors', 'stores'] as $t) {
             $byMonth = array_fill(0, 12, 0);
             $rows = DB::table($t)->selectRaw('month(created_at) m, count(*) c')
                 ->whereYear('created_at', now()->year)->groupBy('m')->get();
@@ -250,35 +252,21 @@ class Resources
                 'search' => ['title', 'additional_phone'],
                 // На проверке — сверху.
                 'defaultSort' => ['status', 'asc'],
-                // category_id ведёт в дерево по типу (Advert::categoryModel), поэтому
-                // в форме два поля-выбора: ad_category_id и service_category_id.
-                'relations' => [
-                    'user_id' => $user, 'city_id' => $city,
-                    'ad_category_id' => $path(AdCategory::class), 'service_category_id' => $path(OrderCategory::class),
-                ],
+                'relations' => ['user_id' => $user, 'city_id' => $city, 'category_id' => $path(AdCategory::class)],
                 'filters' => [
-                    'status' => 'eq', 'type' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'created_at' => 'daterange',
-                    'ad_category_id' => fn (Builder $q, string $v) => $q->where('type', '!=', Advert::TYPE_SERVICE)->whereIn('category_id', AdCategory::descendantIds((int) $v)),
-                    'service_category_id' => fn (Builder $q, string $v) => $q->where('type', Advert::TYPE_SERVICE)->whereIn('category_id', OrderCategory::descendantIds((int) $v)),
+                    'status' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'created_at' => 'daterange',
+                    'category_id' => fn (Builder $q, string $v) => $q->whereIn('category_id', AdCategory::descendantIds((int) $v)),
                 ],
                 'fields' => [
-                    'user_id' => 'relation!', 'type' => 'select!', 'title' => 'text!', 'description' => 'text', 'price' => 'number',
-                    'ad_category_id' => 'relation', 'service_category_id' => 'relation',
+                    'user_id' => 'relation!', 'title' => 'text!', 'description' => 'text', 'price' => 'number', 'category_id' => 'relation!',
                     'city_id' => 'relation!', 'additional_phone' => 'text', 'status' => 'select!', 'reject_reason' => 'text',
                 ],
-                'listExtra' => fn (Collection $rows) => ['category' => $rows->mapWithKeys(fn (Advert $a) => [
-                    (string) $a->id => Advert::categoryModel($a->type)::path((int) $a->category_id) ?? '',
-                ])->all()],
-                'formValues' => fn (Advert $a) => [($a->type === Advert::TYPE_SERVICE ? 'service' : 'ad') . '_category_id' => (string) $a->category_id],
-                'beforeSave' => function (Advert $a, array &$data) {
+                'beforeSave' => function (Advert $ad, array &$data) {
                     $data['price'] ??= 0;
                     $data['status'] ??= Advert::STATUS_MODERATE;
-                    $id = $data[$data['type'] === Advert::TYPE_SERVICE ? 'service_category_id' : 'ad_category_id'] ?? null;
-                    unset($data['ad_category_id'], $data['service_category_id']);
-                    if (!$id || !Advert::categoryModel($data['type'])::isLeaf($id)) {
-                        throw new AdminError('Выберите конечную категорию ' . ($data['type'] === Advert::TYPE_SERVICE ? 'услуг' : 'объявлений'));
+                    if (empty($data['category_id']) || !AdCategory::isLeaf((int) $data['category_id'])) {
+                        throw new AdminError('Выберите конечную категорию объявлений');
                     }
-                    $data['category_id'] = $id;
                 },
                 // Автор получает пуш, как при модерации заказа (OrderActivatedListener).
                 'action' => function (string $key, Advert $ad, string $input) use ($push) {
@@ -297,8 +285,46 @@ class Resources
                 },
             ],
 
+            'service' => [
+                'model' => Service::class,
+                'search' => ['title', 'additional_phone'],
+                // На проверке — сверху.
+                'defaultSort' => ['status', 'asc'],
+                'relations' => ['user_id' => $user, 'city_id' => $city, 'category_id' => $path(OrderCategory::class)],
+                'filters' => [
+                    'status' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'created_at' => 'daterange',
+                    'category_id' => fn (Builder $q, string $v) => $q->whereIn('category_id', OrderCategory::descendantIds((int) $v)),
+                ],
+                'fields' => [
+                    'user_id' => 'relation!', 'title' => 'text!', 'description' => 'text', 'price' => 'number', 'category_id' => 'relation!',
+                    'city_id' => 'relation!', 'additional_phone' => 'text', 'status' => 'select!', 'reject_reason' => 'text',
+                ],
+                'beforeSave' => function (Service $s, array &$data) {
+                    $data['price'] ??= 0;
+                    $data['status'] ??= Service::STATUS_MODERATE;
+                    if (empty($data['category_id']) || !OrderCategory::isLeaf((int) $data['category_id'])) {
+                        throw new AdminError('Выберите конечную категорию услуг');
+                    }
+                },
+                // Автор получает пуш, как при модерации заказа (OrderActivatedListener).
+                'action' => function (string $key, Service $s, string $input) use ($push) {
+                    $approve = $key === 'approve';
+                    $s->forceFill(['status' => $approve ? Service::STATUS_ACTIVE : Service::STATUS_REJECTED, 'reject_reason' => $approve ? null : ($input ?: null)])->save();
+                    if ($s->user) {
+                        $push()->send(
+                            $s->user,
+                            'Услуга «' . mb_substr($s->title, 0, 60) . '»',
+                            $approve ? 'Ваша услуга прошла модерацию и опубликована' : 'Услуга отклонена' . ($input ? ": $input" : ''),
+                            ['type' => $approve ? 'service_activated' : 'service_rejected', 'service_id' => (string) $s->id],
+                        );
+                    }
+
+                    return null;
+                },
+            ],
+
             'ad-category' => $category(AdCategory::class, [
-                'объявления' => fn (int $id) => Advert::where('type', '!=', Advert::TYPE_SERVICE)->where('category_id', $id)->exists(),
+                'объявления' => fn (int $id) => Advert::where('category_id', $id)->exists(),
             ]),
 
             'subscription' => [
@@ -349,7 +375,7 @@ class Resources
             'order-category' => $category(OrderCategory::class, [
                 'заказы' => fn (int $id) => Order::where('category_id', $id)->exists(),
                 'исполнители' => fn (int $id) => DB::table('executor_service_types')->where('order_category_id', $id)->exists(),
-                'объявления-услуги' => fn (int $id) => Advert::where('type', Advert::TYPE_SERVICE)->where('category_id', $id)->exists(),
+                'услуги' => fn (int $id) => Service::where('category_id', $id)->exists(),
             ]),
 
             // Статус меняется формой; переход «на проверке → активный» ловит
