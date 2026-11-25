@@ -6,6 +6,7 @@ use App\Models\Advert;
 use App\Models\City;
 use App\Models\Executor;
 use App\Models\Order;
+use App\Models\Store;
 use App\Models\User;
 use Database\Seeders\CitySeeder;
 use Database\Seeders\DemoSeeder;
@@ -24,34 +25,36 @@ class DemoSeederTest extends TestCase
 
         $this->assertSame(10, Executor::count());
         $this->assertSame(20, User::where('phone', 'like', '+77010%')->count());
-        $this->assertSame(25, Order::count());
-        $this->assertSame(15, Advert::where('type', Advert::TYPE_ADVERT)->count());
-        $this->assertSame(10, Advert::where('type', Advert::TYPE_SERVICE)->count());
+        $this->assertSame(14, Order::count());
+
+        // Объявления, услуги и магазины в витрину не входят.
+        $this->assertSame(0, Advert::count());
+        $this->assertSame(0, Store::count());
 
         $this->assertEquals([
-            Order::STATUS_MODERATE => 2,
-            Order::STATUS_ACTIVE => 12,
-            Order::STATUS_HAS_EXECUTOR => 5,
-            Order::STATUS_COMPLETED => 4,
-            Order::STATUS_ARCHIVE => 2,
+            Order::STATUS_MODERATE => 1,
+            Order::STATUS_ACTIVE => 8,
+            Order::STATUS_HAS_EXECUTOR => 2,
+            Order::STATUS_COMPLETED => 2,
+            Order::STATUS_ARCHIVE => 1,
         ], Order::selectRaw('status, count(*) c')->groupBy('status')->pluck('c', 'status')->map(fn ($c) => (int) $c)->sortKeys()->all());
 
         // Исполнитель есть ровно у выбранных и выполненных.
-        $this->assertSame(9, Order::where('executor_id', '>', 0)->count());
+        $this->assertSame(4, Order::where('executor_id', '>', 0)->count());
 
-        // Только три города.
-        $cityIds = City::whereIn('name', ['Алматы', 'Астана', 'Караганды'])->pluck('id');
-        foreach (['users', 'orders', 'adverts'] as $table) {
+        // Заказы распределены по шести городам, и только по ним.
+        $names = ['Алматы', 'Астана', 'Караганды', 'Шымкент', 'Павлодар', 'Костанай'];
+        $cityIds = City::whereIn('name', $names)->pluck('id');
+        foreach (['users', 'orders'] as $table) {
             $this->assertSame(0, DB::table($table)->whereNotNull('city_id')->whereNotIn('city_id', $cityIds)->count(), $table);
         }
+        $this->assertCount(6, Order::distinct()->pluck('city_id'));
 
-        // У каждой карточки есть фото, и файл реально лежит в storage.
-        foreach ([Order::class, Advert::class] as $model) {
-            $model::with('media')->get()->each(function ($item) {
-                $this->assertNotEmpty($item->media, class_basename($item) . " #{$item->id} без фото");
-                $this->assertFileExists(storage_path('app/public/' . substr($item->media->first()->storage_link, strlen('/storage/'))));
-            });
-        }
+        // У каждого заказа есть фото, и файл реально лежит в storage.
+        Order::with('media')->get()->each(function ($order) {
+            $this->assertNotEmpty($order->media, "Order #{$order->id} без фото");
+            $this->assertFileExists(storage_path('app/public/' . substr($order->media->first()->storage_link, strlen('/storage/'))));
+        });
 
         // У каждого исполнителя есть рейтинг.
         $this->assertSame(0, Executor::doesntHave('ratings')->count());
