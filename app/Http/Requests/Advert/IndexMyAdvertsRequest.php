@@ -24,7 +24,6 @@ class IndexMyAdvertsRequest extends FormRequest
     public function rules()
     {
         return [
-            'type' => ['nullable', 'string', 'in:advert,service'],
             'category' => ['nullable', 'integer'],
             'price_min' => ['nullable', 'numeric'],
             'price_max' => ['nullable', 'numeric'],

@@ -13,12 +13,11 @@ class AdvertPresenter extends BasePresenter
             'title'       => $this->title,
             'description' => mb_strimwidth($this->description, 0, 128, '...'),
             'price'       => $this->price !== null ? (float) $this->price : null,
-            'type'        => $this->type ?? 'advert',
             'status'      => (int) ($this->status ?? 2),
             'reject_reason' => $this->reject_reason,
-            'category'    => ($c = $this->categoryRecord()) ? [
-                'id'   => $c->id,
-                'name' => $c->{$c::LABEL},
+            'category'    => $this->category ? [
+                'id'   => $this->category->id,
+                'name' => $this->category->name,
             ] : null,
             'city'        => $this->city ? [
                 'id'   => $this->city->id,
@@ -36,13 +35,12 @@ class AdvertPresenter extends BasePresenter
             'title'            => $this->title,
             'description'      => $this->description,
             'price'            => $this->price !== null ? (float) $this->price : null,
-            'type'             => $this->type ?? 'advert',
             'status'           => (int) ($this->status ?? 2),
             'reject_reason'    => $this->reject_reason,
             'additional_phone' => $this->additional_phone,
-            'category'         => ($c = $this->categoryRecord()) ? [
-                'id'   => $c->id,
-                'name' => $c->{$c::LABEL},
+            'category'         => $this->category ? [
+                'id'   => $this->category->id,
+                'name' => $this->category->name,
             ] : null,
             'city'             => $this->city ? [
                 'id'   => $this->city->id,

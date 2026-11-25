@@ -32,7 +32,6 @@ class AdvertPriceOptionalTest extends TestCase
     private function payload(array $extra = []): array
     {
         return array_merge([
-            'type' => 'advert',
             'title' => 'Токарные работы',
             'description' => 'Описание',
             'category_id' => AdCategory::create(['name' => 'Металлообработка'])->id,

@@ -6,6 +6,7 @@ use App\Models\Advert;
 use App\Models\Executor;
 use App\Models\Order;
 use App\Models\Rating;
+use App\Models\Service;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserBlock;
@@ -62,12 +63,10 @@ class AppServiceProvider extends ServiceProvider
         Order::created(fn (Order $o) => TelegramService::notify('order',
             "📦 Новый заказ: $o->title\nБюджет: до $o->price_max\nЗаказчик: " . $who($o->user), "order/$o->id"));
 
-        Advert::created(function (Advert $a) use ($who) {
-            $isService = $a->type === Advert::TYPE_SERVICE;
-            TelegramService::notify($isService ? 'service' : 'advert',
-                ($isService ? '🧰 Новая услуга: ' : '📢 Новое объявление: ') . "$a->title\nЦена: $a->price\nАвтор: " . $who($a->user),
-                "advert/$a->id");
-        });
+        Advert::created(fn (Advert $a) => TelegramService::notify('advert',
+            "📢 Новое объявление: $a->title\nЦена: $a->price\nАвтор: " . $who($a->user), "advert/$a->id"));
+        Service::created(fn (Service $s) => TelegramService::notify('service',
+            "🧰 Новая услуга: $s->title\nЦена: $s->price\nАвтор: " . $who($s->user), "service/$s->id"));
 
         UserBlock::created(fn (UserBlock $b) => TelegramService::notify('user_block',
             "🚫 Блокировка\n" . $who($b->user) . ' заблокировал(а) ' . $who($b->blockedUser), "user-block/$b->id"));

@@ -46,13 +46,6 @@ class AdvertService extends BaseService
             return $this->errUnauthenticated('Unathorized');
         }
 
-        if (($data['type'] ?? null) == Advert::TYPE_SERVICE) {
-            $checkAuthor = $this->checkServiceAuthor($user);
-            if (!$this->isSuccess($checkAuthor)) {
-                return $checkAuthor;
-            }
-        }
-
         $data['user_id'] = $user->id;
         $data['status'] = Advert::STATUS_MODERATE;
 
@@ -82,12 +75,6 @@ class AdvertService extends BaseService
 
         if ($advert->user_id != $user->id) {
             return $this->error(403, __('advert.cannot_edit_foreign'));
-        }
-        if (isset($data['type']) && $data['type'] == Advert::TYPE_SERVICE) {
-            $checkAuthor = $this->checkServiceAuthor($user);
-            if (!$this->isSuccess($checkAuthor)) {
-                return $checkAuthor;
-            }
         }
         $advert->media()->delete();
 
@@ -125,22 +112,5 @@ class AdvertService extends BaseService
         $advert->delete();
 
         return $this->ok(__('advert.deleted'));
-    }
-
-    // Услуги выставляют исполнители и магазины, и только с оплаченной
-    // подпиской. Если есть оба профиля — хватает подписки любого из них.
-    private function checkServiceAuthor($user)
-    {
-        $executor = $user->executor()->first();
-        $store = $user->store()->first();
-
-        if (is_null($executor) && is_null($store)) {
-            return $this->errFobidden(__('advert.service_forbidden'));
-        }
-        if (($executor && $executor->hasAccess()) || ($store && $store->hasAccess())) {
-            return $this->ok();
-        }
-
-        return $this->errPaymentRequired(__('executor.no_subscription'));
     }
 }

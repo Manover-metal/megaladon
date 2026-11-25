@@ -4,20 +4,19 @@ namespace App\Repositories;
 
 use App\Models\AdCategory;
 use App\Models\Advert;
-use App\Models\OrderCategory;
 use Carbon\Carbon;
 
 class AdvertRepo
 {
     public function info(int $id)
     {
-        return Advert::with('user', 'category', 'serviceCategory', 'city', 'media')
+        return Advert::with('user', 'category', 'city', 'media')
             ->find($id);
     }
 
     public function index(array $params)
     {
-        $query = Advert::with('media', 'category', 'serviceCategory', 'city');
+        $query = Advert::with('media', 'category', 'city');
         $query = $this->applyFilterQuery($query, $params);           
         $query = $this->applyPaginationQuery($query, $params);
         $query = $this->applyOrderBy($query, $params);
@@ -37,16 +36,8 @@ class AdvertRepo
 
     private function applyFilterQuery($query, $params)
     {
-        if (isset($params['type'])) {
-            $query->where('type', $params['type']);
-        }
-
         if (isset($params['category'])) {
-            // id в двух деревьях пересекаются: ветку ищем в дереве своего типа.
-            $id = (int) $params['category'];
-            $query->where(fn ($q) => $q
-                ->where(fn ($s) => $s->where('type', Advert::TYPE_SERVICE)->whereIn('category_id', OrderCategory::descendantIds($id)))
-                ->orWhere(fn ($a) => $a->where('type', '!=', Advert::TYPE_SERVICE)->whereIn('category_id', AdCategory::descendantIds($id))));
+            $query->whereIn('category_id', AdCategory::descendantIds((int) $params['category']));
         }
 
         if(isset($params['city_id'])) {
