@@ -12,7 +12,7 @@ class Report extends Model
     const RESOLUTION_DISMISSED = 'dismissed';
     const RESOLUTION_BANNED = 'banned';
 
-    const TARGETS = ['user', 'order', 'advert', 'message', 'store'];
+    const TARGETS = ['user', 'order', 'advert', 'service', 'message', 'store'];
     const REASONS = ['spam', 'abuse', 'inappropriate', 'fake', 'other'];
 
     protected $fillable = ['reporter_id', 'user_id', 'target_type', 'target_id', 'reason', 'comment'];
