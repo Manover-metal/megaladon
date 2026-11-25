@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\v1\{
     AdvertController,
+    ServiceController,
     ExecutorController,
     OrderOfferController,
     UserController, 
@@ -122,6 +123,18 @@ Route::group(['guard' => 'api'], function () {
             Route::post('/', [AdvertController::class, 'create']);
             Route::post('/{id}/update', [AdvertController::class, 'update']);
             Route::delete('/{id}/delete', [AdvertController::class, 'delete']);
+        });
+    });
+
+    Route::group(['prefix' => 'services'], function() {
+        Route::get('/', [ServiceController::class, 'index']);
+        Route::get('/my', [ServiceController::class, 'indexMy']);
+        Route::get('/{id}', [ServiceController::class, 'info']);
+
+        Route::group(['middleware' => 'api'], function () {
+            Route::post('/', [ServiceController::class, 'create']);
+            Route::post('/{id}/update', [ServiceController::class, 'update']);
+            Route::delete('/{id}/delete', [ServiceController::class, 'delete']);
         });
     });
 
