@@ -10,12 +10,12 @@ class ServiceRepo
 {
     public function info(int $id)
     {
-        return Service::with('user', 'category', 'city', 'media')->find($id);
+        return Service::with('user', 'categories', 'city', 'media')->find($id);
     }
 
     public function index(array $params)
     {
-        $query = Service::with('media', 'category', 'city');
+        $query = Service::with('media', 'categories', 'city');
         $query = $this->applyFilterQuery($query, $params);
         $query = $this->applyPaginationQuery($query, $params);
         $query = $this->applyOrderBy($query, $params);
@@ -35,7 +35,8 @@ class ServiceRepo
     private function applyFilterQuery($query, $params)
     {
         if (isset($params['category'])) {
-            $query->whereIn('category_id', OrderCategory::descendantIds((int) $params['category']));
+            $ids = OrderCategory::descendantIds((int) $params['category']);
+            $query->whereHas('categories', fn ($c) => $c->whereIn('order_categories.id', $ids));
         }
 
         if (isset($params['city_id'])) {

@@ -29,9 +29,10 @@ class ServiceRepoTest extends TestCase
         $leaf = OrderCategory::create(['title' => 'Лазерная', 'parent_id' => $root->id]);
         $other = OrderCategory::create(['title' => 'Сварка', 'parent_id' => 0]);
         $base = ['user_id' => $user->id, 'city_id' => $city->id, 'title' => 't'];
-        $a = Service::create($base + ['category_id' => $leaf->id, 'status' => Service::STATUS_ACTIVE]);
-        Service::create($base + ['category_id' => $other->id, 'status' => Service::STATUS_ACTIVE]);
-        Service::create($base + ['category_id' => $leaf->id, 'status' => Service::STATUS_MODERATE]);
+        $a = Service::create($base + ['status' => Service::STATUS_ACTIVE]);
+        $a->categories()->sync([$leaf->id]);
+        Service::create($base + ['status' => Service::STATUS_ACTIVE])->categories()->sync([$other->id]);
+        Service::create($base + ['status' => Service::STATUS_MODERATE])->categories()->sync([$leaf->id]);
 
         $ids = (new ServiceRepo())->index(['category' => $root->id, 'only_active' => true])->pluck('id')->all();
 
@@ -42,12 +43,14 @@ class ServiceRepoTest extends TestCase
     {
         $user = $this->user();
         $leaf = OrderCategory::create(['title' => 'Лазерная', 'parent_id' => 0]);
-        $s = Service::create(['user_id' => $user->id, 'city_id' => $user->city_id, 'title' => 't', 'category_id' => $leaf->id, 'price' => 100]);
+        $s = Service::create(['user_id' => $user->id, 'city_id' => $user->city_id, 'title' => 't', 'price' => 100]);
+        $s->categories()->sync([$leaf->id]);
 
         $list = (new ServicePresenter((new ServiceRepo())->info($s->id)))->list();
 
         $this->assertArrayNotHasKey('type', $list);
-        $this->assertSame('Лазерная', $list['category']['name']);
+        $this->assertArrayNotHasKey('category', $list);
+        $this->assertSame('Лазерная', $list['categories'][0]['name']);
         $this->assertSame(1, $list['status']);
     }
 }

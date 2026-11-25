@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/** Услуга исполнителя или магазина. Категория — из дерева услуг (order_categories). */
+/** Услуга исполнителя или магазина. Категории — конечные из дерева услуг (order_categories). */
 class Service extends Model
 {
     use HasFactory;
@@ -25,7 +25,6 @@ class Service extends Model
         'title',
         'description',
         'price',
-        'category_id',
         'city_id',
         'additional_phone',
         'status',
@@ -52,8 +51,8 @@ class Service extends Model
         return $this->belongsTo(City::class, 'city_id');
     }
 
-    public function category()
+    public function categories()
     {
-        return $this->belongsTo(OrderCategory::class, 'category_id');
+        return $this->belongsToMany(OrderCategory::class, 'service_categories', 'service_id', 'order_category_id');
     }
 }

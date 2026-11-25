@@ -23,7 +23,9 @@ class AdminServiceResourceTest extends TestCase
         $u = User::create(['name' => 'U', 'phone' => '+77001234567', 'password' => 'secret123', 'is_phone_confirmed' => true,
             'city_id' => City::firstOrCreate(['name' => 'Алматы'])->id]);
         $cat = OrderCategory::create(['title' => 'Лазерная', 'parent_id' => 0]);
-        return Service::create(['user_id' => $u->id, 'city_id' => $u->city_id, 'title' => 'Резка', 'category_id' => $cat->id, 'status' => $status]);
+        $s = Service::create(['user_id' => $u->id, 'city_id' => $u->city_id, 'title' => 'Резка', 'status' => $status]);
+        $s->categories()->sync([$cat->id]);
+        return $s;
     }
 
     public function test_reject_with_empty_reason_sets_status_and_pushes(): void
@@ -56,7 +58,7 @@ class AdminServiceResourceTest extends TestCase
     {
         $s = $this->service();
         $this->expectException(AdminError::class);
-        Engine::for('order-category')->remove($s->category_id);
+        Engine::for('order-category')->remove($s->categories()->first()->id);
     }
 
     public function test_stats_include_services(): void
@@ -70,8 +72,31 @@ class AdminServiceResourceTest extends TestCase
     {
         $r = Resources::get('advert');
         $this->assertArrayHasKey('category_id', $r['fields']);
+        $this->assertSame('multiselect', Resources::get('service')['fields']['categories']);
+        $this->assertArrayNotHasKey('category_id', Resources::get('service')['fields']);
         $this->assertArrayNotHasKey('type', $r['fields']);
         $this->assertArrayNotHasKey('ad_category_id', $r['fields']);
         $this->assertArrayNotHasKey('service_category_id', $r['fields']);
+    }
+
+    public function test_admin_save_syncs_categories_and_rejects_non_leaf(): void
+    {
+        $s = $this->service();
+        $root = OrderCategory::create(['title' => 'Резка', 'parent_id' => 0]);
+        $leaf = OrderCategory::create(['title' => 'Плазма', 'parent_id' => $root->id]);
+        $req = \Illuminate\Http\Request::create('/admin/service/' . $s->id, 'POST', [
+            'user_id' => $s->user_id, 'title' => 'Резка', 'city_id' => $s->city_id, 'status' => Service::STATUS_ACTIVE,
+            'categories' => [$leaf->id, $s->categories()->first()->id],
+        ]);
+        Engine::for('service')->save($s->id, $req);
+        $this->assertCount(2, $s->categories()->get());
+        $this->assertSame(['Лазерная', 'Плазма'], collect(Resources::get('service')['extra']($s->fresh())['categories'])->sort()->values()->all());
+
+        $bad = \Illuminate\Http\Request::create('/admin/service/' . $s->id, 'POST', [
+            'user_id' => $s->user_id, 'title' => 'Резка', 'city_id' => $s->city_id, 'status' => Service::STATUS_ACTIVE,
+            'categories' => [$root->id],
+        ]);
+        $this->expectException(AdminError::class);
+        Engine::for('service')->save($s->id, $bad);
     }
 }

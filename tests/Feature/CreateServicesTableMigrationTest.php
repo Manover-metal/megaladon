@@ -16,14 +16,16 @@ class CreateServicesTableMigrationTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('services'));
         $this->assertFalse(Schema::hasColumn('adverts', 'type'));
-        foreach (['user_id', 'city_id', 'title', 'description', 'price', 'category_id', 'additional_phone', 'status', 'reject_reason', 'created_at'] as $col) {
+        foreach (['user_id', 'city_id', 'title', 'description', 'price', 'additional_phone', 'status', 'reject_reason', 'created_at'] as $col) {
+            $this->assertTrue(Schema::hasTable('service_categories'));
             $this->assertTrue(Schema::hasColumn('services', $col), $col);
         }
     }
 
     public function test_up_deletes_leftover_services_with_media_and_reports(): void
     {
-        Artisan::call('migrate:rollback', ['--step' => 1]);
+        // Два шага: связка категорий услуг и сама таблица services.
+        Artisan::call('migrate:rollback', ['--step' => 2]);
         $this->assertTrue(Schema::hasColumn('adverts', 'type'));
 
         $now = now();

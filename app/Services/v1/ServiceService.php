@@ -56,9 +56,11 @@ class ServiceService extends BaseService
         $data['user_id'] = $user->id;
         $data['status'] = Service::STATUS_MODERATE;
         $files = $data['files'] ?? [];
-        unset($data['files']);
+        $categories = $data['category_ids'];
+        unset($data['files'], $data['category_ids']);
 
         $service = $this->repo->store($data);
+        $service->categories()->sync($categories);
         $this->attachFiles($service, $files);
 
         return $this->ok(__('service.created'));
@@ -85,7 +87,10 @@ class ServiceService extends BaseService
 
         $service->media()->delete();
         $this->attachFiles($service, $data['files'] ?? []);
-        unset($data['files']);
+        if (isset($data['category_ids'])) {
+            $service->categories()->sync($data['category_ids']);
+        }
+        unset($data['files'], $data['category_ids']);
 
         // После правок услуга снова уходит на проверку.
         $data['status'] = Service::STATUS_MODERATE;

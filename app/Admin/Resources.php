@@ -290,22 +290,30 @@ class Resources
                 'search' => ['title', 'additional_phone'],
                 // На проверке — сверху.
                 'defaultSort' => ['status', 'asc'],
-                'relations' => ['user_id' => $user, 'city_id' => $city, 'category_id' => $path(OrderCategory::class)],
+                'relations' => ['user_id' => $user, 'city_id' => $city, 'category' => $path(OrderCategory::class), 'categories' => $path(OrderCategory::class)],
                 'filters' => [
                     'status' => 'eq', 'city_id' => 'eq', 'user_id' => 'eq', 'created_at' => 'daterange',
-                    'category_id' => fn (Builder $q, string $v) => $q->whereIn('category_id', OrderCategory::descendantIds((int) $v)),
+                    'category' => fn (Builder $q, string $v) => $q->whereHas('categories', fn ($c) => $c->whereIn('order_categories.id', OrderCategory::descendantIds((int) $v))),
                 ],
                 'fields' => [
-                    'user_id' => 'relation!', 'title' => 'text!', 'description' => 'text', 'price' => 'number', 'category_id' => 'relation!',
+                    'user_id' => 'relation!', 'title' => 'text!', 'description' => 'text', 'price' => 'number', 'categories' => 'multiselect',
                     'city_id' => 'relation!', 'additional_phone' => 'text', 'status' => 'select!', 'reject_reason' => 'text',
                 ],
-                'beforeSave' => function (Service $s, array &$data) {
+                'extra' => fn (Service $s) => ['categories' => $s->categories()->pluck('title')->all()],
+                'formValues' => fn (Service $s) => ['categories' => $s->categories()->pluck('order_categories.id')->map('strval')->all()],
+                'beforeSave' => function (Service $s, array &$data, array $raw) {
                     $data['price'] ??= 0;
                     $data['status'] ??= Service::STATUS_MODERATE;
-                    if (empty($data['category_id']) || !OrderCategory::isLeaf((int) $data['category_id'])) {
-                        throw new AdminError('Выберите конечную категорию услуг');
+                    if (empty($raw['categories'])) {
+                        throw new AdminError('Выберите хотя бы одну категорию услуг');
+                    }
+                    foreach ($raw['categories'] as $id) {
+                        if (!OrderCategory::isLeaf($id)) {
+                            throw new AdminError('Категории услуг: выберите конечные, без вложенных');
+                        }
                     }
                 },
+                'afterSave' => fn (Service $s, array $raw) => $s->categories()->sync($raw['categories'] ?? []),
                 // Автор получает пуш, как при модерации заказа (OrderActivatedListener).
                 'action' => function (string $key, Service $s, string $input) use ($push) {
                     $approve = $key === 'approve';
@@ -375,7 +383,7 @@ class Resources
             'order-category' => $category(OrderCategory::class, [
                 'заказы' => fn (int $id) => Order::where('category_id', $id)->exists(),
                 'исполнители' => fn (int $id) => DB::table('executor_service_types')->where('order_category_id', $id)->exists(),
-                'услуги' => fn (int $id) => Service::where('category_id', $id)->exists(),
+                'услуги' => fn (int $id) => DB::table('service_categories')->where('order_category_id', $id)->exists(),
             ]),
 
             // Статус меняется формой; переход «на проверке → активный» ловит

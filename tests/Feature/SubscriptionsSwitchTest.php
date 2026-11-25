@@ -32,7 +32,7 @@ class SubscriptionsSwitchTest extends TestCase
         return $this->withToken($user->createToken('api')->plainTextToken)->postJson('/api/services', [
             'title' => 'Лазерная резка',
             'description' => 'Режем лист до 20 мм',
-            'category_id' => OrderCategory::create(['title' => 'Лазерная резка', 'parent_id' => 0])->id,
+            'category_ids' => [OrderCategory::create(['title' => 'Лазерная резка', 'parent_id' => 0])->id],
             'city_id' => $this->city()->id,
         ]);
     }

@@ -48,7 +48,7 @@ class ServiceApiTest extends TestCase
         return array_merge([
             'title' => 'Лазерная резка',
             'description' => 'Описание',
-            'category_id' => OrderCategory::create(['title' => 'Лазерная резка', 'parent_id' => 0])->id,
+            'category_ids' => [OrderCategory::create(['title' => 'Лазерная резка', 'parent_id' => 0])->id],
             'city_id' => $this->city()->id,
         ], $extra);
     }
@@ -87,16 +87,18 @@ class ServiceApiTest extends TestCase
         AdCategory::create(['name' => 'Станки']);
         $adCat = AdCategory::create(['name' => 'Инструмент']);
         $this->assertNull(OrderCategory::find($adCat->id), 'тест предполагает, что id есть только в дереве объявлений');
-        $this->as($u)->postJson('/api/services', ['category_id' => $adCat->id] + $payload)->assertStatus(422);
+        $this->as($u)->postJson('/api/services', ['category_ids' => [$adCat->id]] + $payload)->assertStatus(422);
     }
 
     public function test_public_index_shows_only_active_and_info_hides_moderated_from_strangers(): void
     {
         $author = $this->executorWithSubscription();
         $cat = OrderCategory::create(['title' => 'X', 'parent_id' => 0]);
-        $base = ['user_id' => $author->id, 'city_id' => $author->city_id, 'title' => 't', 'category_id' => $cat->id];
+        $base = ['user_id' => $author->id, 'city_id' => $author->city_id, 'title' => 't'];
         $active = Service::create($base + ['status' => Service::STATUS_ACTIVE]);
         $moderate = Service::create($base + ['status' => Service::STATUS_MODERATE]);
+        $active->categories()->sync([$cat->id]);
+        $moderate->categories()->sync([$cat->id]);
 
         $ids = collect($this->getJson('/api/services')->assertOk()->json('list'))->pluck('id')->all();
         $this->assertSame([$active->id], $ids);
@@ -111,11 +113,46 @@ class ServiceApiTest extends TestCase
     {
         $author = $this->executorWithSubscription('+77001000005');
         $other = $this->executorWithSubscription('+77001000006');
-        $s = Service::create(['user_id' => $author->id, 'city_id' => $author->city_id, 'title' => 't', 'category_id' => 1]);
+        $s = Service::create(['user_id' => $author->id, 'city_id' => $author->city_id, 'title' => 't']);
 
         $this->as($other)->postJson("/api/services/$s->id/update", ['title' => 'x'])->assertStatus(403);
         $this->as($other)->deleteJson("/api/services/$s->id/delete")->assertStatus(403);
         $this->as($author)->deleteJson("/api/services/$s->id/delete")->assertOk();
         $this->assertNull(Service::find($s->id));
+    }
+
+    public function test_service_keeps_several_categories_and_is_found_by_any_branch(): void
+    {
+        $u = $this->executorWithSubscription();
+        $root = OrderCategory::create(['title' => 'Резка', 'parent_id' => 0]);
+        $leaf1 = OrderCategory::create(['title' => 'Лазерная', 'parent_id' => $root->id]);
+        $other = OrderCategory::create(['title' => 'Сварка', 'parent_id' => 0]);
+        $leaf2 = OrderCategory::create(['title' => 'Аргон', 'parent_id' => $other->id]);
+
+        // Дубль id не даёт второй строки в связке.
+        $this->as($u)->postJson('/api/services', $this->payload(['category_ids' => [$leaf1->id, $leaf2->id, $leaf2->id]]))->assertOk();
+        $s = Service::firstOrFail();
+        $this->assertEqualsCanonicalizing([$leaf1->id, $leaf2->id], $s->categories()->pluck('order_categories.id')->all());
+        $s->forceFill(['status' => Service::STATUS_ACTIVE])->save();
+
+        // Находится по ветке второй категории.
+        $this->assertSame([$s->id], array_column($this->getJson("/api/services?category=$other->id")->json('list'), 'id'));
+        $list = $this->getJson('/api/services')->json('list.0');
+        $this->assertArrayNotHasKey('category', $list);
+        $this->assertEqualsCanonicalizing(['Лазерная', 'Аргон'], array_column($list['categories'], 'name'));
+
+        // Update без category_ids набор не трогает; пустой массив и неконечная — 422.
+        $this->as($u)->postJson("/api/services/$s->id/update", ['title' => 'x'])->assertOk();
+        $this->assertCount(2, $s->categories()->get());
+        $this->as($u)->postJson("/api/services/$s->id/update", ['category_ids' => []])->assertStatus(422);
+        $this->as($u)->postJson("/api/services/$s->id/update", ['category_ids' => [$root->id]])->assertStatus(422);
+        $this->as($u)->postJson("/api/services/$s->id/update", ['category_ids' => [$leaf2->id]])->assertOk();
+        $this->assertSame([$leaf2->id], $s->categories()->pluck('order_categories.id')->map('intval')->all());
+    }
+
+    public function test_empty_category_ids_is_rejected_on_create(): void
+    {
+        $u = $this->executorWithSubscription();
+        $this->as($u)->postJson('/api/services', $this->payload(['category_ids' => []]))->assertStatus(422);
     }
 }

@@ -15,10 +15,7 @@ class ServicePresenter extends BasePresenter
             'price'         => $this->price !== null ? (float) $this->price : null,
             'status'        => (int) ($this->status ?? 2),
             'reject_reason' => $this->reject_reason,
-            'category'      => $this->category ? [
-                'id'   => $this->category->id,
-                'name' => $this->category->title,
-            ] : null,
+            'categories'    => $this->presentCollections($this->categories, OrderCategoryPresenter::class, 'executorList'),
             'city'          => $this->city ? [
                 'id'   => $this->city->id,
                 'name' => $this->city->name,
@@ -38,10 +35,7 @@ class ServicePresenter extends BasePresenter
             'status'           => (int) ($this->status ?? 2),
             'reject_reason'    => $this->reject_reason,
             'additional_phone' => $this->additional_phone,
-            'category'         => $this->category ? [
-                'id'   => $this->category->id,
-                'name' => $this->category->title,
-            ] : null,
+            'categories'       => $this->presentCollections($this->categories, OrderCategoryPresenter::class, 'executorList'),
             'city'             => $this->city ? [
                 'id'   => $this->city->id,
                 'name' => $this->city->name,

@@ -20,7 +20,8 @@ class CreateServiceRequest extends FormRequest
             'description' => ['nullable', 'string'],
             // Границы совпадают с decimal(15,2) в БД.
             'price' => ['nullable', 'numeric', 'min:0', 'max:9999999999999.99'],
-            'category_id' => ['required', 'integer', new LeafCategory(OrderCategory::class)],
+            'category_ids' => ['required', 'array', 'min:1'],
+            'category_ids.*' => ['required', 'integer', new LeafCategory(OrderCategory::class)],
             'city_id' => ['required', 'integer', 'exists:cities,id'],
             'additional_phone' => ['nullable', 'string', 'starts_with:+'],
             'files' => ['nullable', 'array'],
