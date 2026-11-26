@@ -300,6 +300,20 @@ class Resources
                     'city_id' => 'relation!', 'additional_phone' => 'text', 'status' => 'select!', 'reject_reason' => 'text',
                 ],
                 'extra' => fn (Service $s) => ['categories' => $s->categories()->pluck('title')->all()],
+                // Колонка «Категории» в списке: одним запросом на страницу.
+                'listExtra' => function (Collection $rows) {
+                    $out = array_fill_keys($rows->pluck('id')->map('strval')->all(), '');
+                    $pairs = DB::table('service_categories')
+                        ->join('order_categories', 'order_categories.id', '=', 'service_categories.order_category_id')
+                        ->whereIn('service_id', $rows->pluck('id'))->orderBy('order_categories.title')
+                        ->get(['service_id', 'order_categories.title']);
+                    foreach ($pairs as $p) {
+                        $k = (string) $p->service_id;
+                        $out[$k] = $out[$k] === '' ? $p->title : "$out[$k], $p->title";
+                    }
+
+                    return ['categories' => $out];
+                },
                 'formValues' => fn (Service $s) => ['categories' => $s->categories()->pluck('order_categories.id')->map('strval')->all()],
                 'beforeSave' => function (Service $s, array &$data, array $raw) {
                     $data['price'] ??= 0;

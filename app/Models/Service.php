@@ -31,6 +31,13 @@ class Service extends Model
         'reject_reason',
     ];
 
+    protected static function booted(): void
+    {
+        // Связку чистим сами: внешних ключей с cascade в проекте нет, а
+        // осиротевшая строка не даёт удалить категорию в админке.
+        static::deleting(fn (Service $s) => $s->categories()->detach());
+    }
+
     public function getStatusName(): string
     {
         return self::STATUS_NAMES[$this->status] ?? (string) $this->status;

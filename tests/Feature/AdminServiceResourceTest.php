@@ -61,6 +61,16 @@ class AdminServiceResourceTest extends TestCase
         Engine::for('order-category')->remove($s->categories()->first()->id);
     }
 
+    public function test_list_extra_labels_categories_per_row_and_remove_detaches(): void
+    {
+        $s = $this->service();
+        $extra = Resources::get('service')['listExtra'](Service::whereKey($s->id)->get());
+        $this->assertSame('Лазерная', $extra['categories'][(string) $s->id]);
+
+        Engine::for('service')->remove($s->id);
+        $this->assertSame(0, DB::table('service_categories')->where('service_id', $s->id)->count());
+    }
+
     public function test_stats_include_services(): void
     {
         // stats() считает month(created_at) — функции MySQL; в sqlite подменяем.

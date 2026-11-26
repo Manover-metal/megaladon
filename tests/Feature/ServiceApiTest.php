@@ -114,11 +114,14 @@ class ServiceApiTest extends TestCase
         $author = $this->executorWithSubscription('+77001000005');
         $other = $this->executorWithSubscription('+77001000006');
         $s = Service::create(['user_id' => $author->id, 'city_id' => $author->city_id, 'title' => 't']);
+        $s->categories()->sync([OrderCategory::create(['title' => 'X', 'parent_id' => 0])->id]);
 
         $this->as($other)->postJson("/api/services/$s->id/update", ['title' => 'x'])->assertStatus(403);
         $this->as($other)->deleteJson("/api/services/$s->id/delete")->assertStatus(403);
         $this->as($author)->deleteJson("/api/services/$s->id/delete")->assertOk();
         $this->assertNull(Service::find($s->id));
+        // Связка не должна осиротеть: иначе категорию потом нельзя удалить в админке.
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('service_categories')->where('service_id', $s->id)->count());
     }
 
     public function test_service_keeps_several_categories_and_is_found_by_any_branch(): void
