@@ -17,7 +17,6 @@ return new class extends Migration
             $table->unique(['service_id', 'order_category_id']);
         });
 
-        $now = now();
         $rows = DB::table('services')->whereNotNull('category_id')->where('category_id', '>', 0)
             ->get(['id', 'category_id'])
             ->map(fn ($s) => ['service_id' => $s->id, 'order_category_id' => $s->category_id])

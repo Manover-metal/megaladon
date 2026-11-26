@@ -19,6 +19,12 @@ class Executor extends Model
         'rating',
     ];
 
+    protected static function booted(): void
+    {
+        // Связку чистим сами: внешних ключей с cascade в проекте нет.
+        static::deleting(fn (Executor $e) => $e->services()->detach());
+    }
+
     public function services()
     {
         return $this->belongsToMany(OrderCategory::class, 'executor_service_types', 'executor_id', 'order_category_id');

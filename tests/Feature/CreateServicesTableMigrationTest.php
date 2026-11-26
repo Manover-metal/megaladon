@@ -16,8 +16,8 @@ class CreateServicesTableMigrationTest extends TestCase
     {
         $this->assertTrue(Schema::hasTable('services'));
         $this->assertFalse(Schema::hasColumn('adverts', 'type'));
+        $this->assertTrue(Schema::hasTable('service_categories'));
         foreach (['user_id', 'city_id', 'title', 'description', 'price', 'additional_phone', 'status', 'reject_reason', 'created_at'] as $col) {
-            $this->assertTrue(Schema::hasTable('service_categories'));
             $this->assertTrue(Schema::hasColumn('services', $col), $col);
         }
     }
