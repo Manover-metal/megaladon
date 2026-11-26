@@ -2,6 +2,7 @@
 
 namespace App\Presenters\v1;
 
+use App\Models\UserBlock;
 use App\Presenters\BasePresenter;
 
 class ServicePresenter extends BasePresenter
@@ -34,7 +35,7 @@ class ServicePresenter extends BasePresenter
             'price'            => $this->price !== null ? (float) $this->price : null,
             'status'           => (int) ($this->status ?? 2),
             'reject_reason'    => $this->reject_reason,
-            'additional_phone' => $this->additional_phone,
+            'additional_phone' => UserBlock::between(auth('api')->id(), (int) $this->user_id) ? null : $this->additional_phone,
             'categories'       => $this->presentCollections($this->categories, OrderCategoryPresenter::class, 'executorList'),
             'city'             => $this->city ? [
                 'id'   => $this->city->id,

@@ -2,6 +2,7 @@
 
 namespace App\Presenters\v1;
 
+use App\Models\UserBlock;
 use App\Presenters\BasePresenter;
 
 class UserPresenter extends BasePresenter
@@ -38,7 +39,7 @@ class UserPresenter extends BasePresenter
             // для единообразия с short()/shortAdvert(): клиент разбирает все
             // три формы одной моделью UserModel.
             'is_deleted' => false,
-        ];
+        ] + $this->blockFlags();
     }
 
     public function short()
@@ -54,7 +55,7 @@ class UserPresenter extends BasePresenter
             'count_orders' => $this->countCompletedOrders(),
             'is_deleted' => false,
             // 'rating' => $this->rating,
-        ];
+        ] + $this->blockFlags();
     }
 
     public function shortAdvert()
@@ -66,12 +67,31 @@ class UserPresenter extends BasePresenter
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'phone' => $this->phone,
+            // Телефон закрыт, пока между людьми блокировка в любую сторону.
+            'phone' => $this->blockedEitherWay() ? null : $this->phone,
             'photo_url' => $this->photo_url ? url($this->photo_url) : null,
             'count_orders' => $this->countCompletedOrders(),
             'is_deleted' => false,
             // 'rating' => $this->rating,
+        ] + $this->blockFlags();
+    }
+
+    /**
+     * Приложение гасит «Написать», «Позвонить» и отклик заранее, не дожидаясь
+     * 403 от сервера, поэтому флаги едут вместе с пользователем.
+     */
+    private function blockFlags(): array
+    {
+        $viewerId = auth('api')->id();
+        return [
+            'blocked_by_me' => UserBlock::blockedByMe($viewerId, (int) $this->id),
+            'blocked_me' => UserBlock::blockedMe($viewerId, (int) $this->id),
         ];
+    }
+
+    private function blockedEitherWay(): bool
+    {
+        return UserBlock::between(auth('api')->id(), (int) $this->id);
     }
 
     // Аккаунт удалён (soft delete), но его отклики, объявления и чаты остаются.

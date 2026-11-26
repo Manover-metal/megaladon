@@ -2,6 +2,7 @@
 
 namespace App\Presenters\v1;
 
+use App\Models\UserBlock;
 use App\Presenters\BasePresenter;
 
 class AdvertPresenter extends BasePresenter
@@ -37,7 +38,7 @@ class AdvertPresenter extends BasePresenter
             'price'            => $this->price !== null ? (float) $this->price : null,
             'status'           => (int) ($this->status ?? 2),
             'reject_reason'    => $this->reject_reason,
-            'additional_phone' => $this->additional_phone,
+            'additional_phone' => UserBlock::between(auth('api')->id(), (int) $this->user_id) ? null : $this->additional_phone,
             'category'         => $this->category ? [
                 'id'   => $this->category->id,
                 'name' => $this->category->name,
