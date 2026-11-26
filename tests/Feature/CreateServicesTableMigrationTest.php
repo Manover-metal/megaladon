@@ -24,8 +24,10 @@ class CreateServicesTableMigrationTest extends TestCase
 
     public function test_up_deletes_leftover_services_with_media_and_reports(): void
     {
-        // Два шага: связка категорий услуг и сама таблица services.
-        Artisan::call('migrate:rollback', ['--step' => 2]);
+        // Откатываем до состояния «до услуг»: пока у adverts нет колонки type.
+        for ($i = 0; $i < 10 && !Schema::hasColumn('adverts', 'type'); $i++) {
+            Artisan::call('migrate:rollback', ['--step' => 1]);
+        }
         $this->assertTrue(Schema::hasColumn('adverts', 'type'));
 
         $now = now();

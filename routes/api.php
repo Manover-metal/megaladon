@@ -151,11 +151,9 @@ Route::group(['guard' => 'api'], function () {
     });
 
     Route::group(['prefix' => 'executor', 'middleware' => 'api'], function () {
-        Route::get('/favorite', [ExecutorController::class, 'indexMy']);
-        Route::post('/favorite', [ExecutorController::class, 'addToFavorites']);
         Route::get('/my/ratings', [ExecutorController::class, 'myRatings']);
         // Страница исполнителя по id исполнителя (не пользователя). Только
-        // число — чтобы не перехватывать /favorite и /my/ratings.
+        // число — чтобы не перехватывать /my/ratings.
         Route::get('/{id}', [ExecutorController::class, 'info'])->whereNumber('id');
     });
 
